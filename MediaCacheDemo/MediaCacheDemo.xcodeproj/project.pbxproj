@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2D5475C02C201F3500921FFF /* MediaCache.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 564DEBB925B5790300AA3CA5 /* MediaCache.framework */; };
+		2D5475C12C201F3500921FFF /* MediaCache.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 564DEBB925B5790300AA3CA5 /* MediaCache.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		9C0842F82226372200EB8F85 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0842F72226372200EB8F85 /* AppDelegate.swift */; };
 		9C0842FA2226372200EB8F85 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0842F92226372200EB8F85 /* ViewController.swift */; };
 		9C0842FD2226372200EB8F85 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9C0842FB2226372200EB8F85 /* Main.storyboard */; };
@@ -31,6 +33,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				2D5475C12C201F3500921FFF /* MediaCache.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -53,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2D5475C02C201F3500921FFF /* MediaCache.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -272,7 +276,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -327,7 +331,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
