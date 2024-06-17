@@ -3,28 +3,17 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2D5475C02C201F3500921FFF /* MediaCache.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 564DEBB925B5790300AA3CA5 /* MediaCache.framework */; };
-		2D5475C12C201F3500921FFF /* MediaCache.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 564DEBB925B5790300AA3CA5 /* MediaCache.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		2DDC74412C201FB10023770C /* MediaCache in Frameworks */ = {isa = PBXBuildFile; productRef = 2DDC74402C201FB10023770C /* MediaCache */; };
 		9C0842F82226372200EB8F85 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0842F72226372200EB8F85 /* AppDelegate.swift */; };
 		9C0842FA2226372200EB8F85 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0842F92226372200EB8F85 /* ViewController.swift */; };
 		9C0842FD2226372200EB8F85 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9C0842FB2226372200EB8F85 /* Main.storyboard */; };
 		9C0842FF2226372300EB8F85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9C0842FE2226372300EB8F85 /* Assets.xcassets */; };
 		9C0843022226372300EB8F85 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9C0843002226372300EB8F85 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		564DEBB825B5790300AA3CA5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 564DEBB425B5790300AA3CA5 /* MediaCache.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 9C08420B222530D700EB8F85;
-			remoteInfo = MediaCache;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		9C9E4FB423D0122500007E6E /* Embed Frameworks */ = {
@@ -33,7 +22,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				2D5475C12C201F3500921FFF /* MediaCache.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -41,7 +29,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		564DEBB425B5790300AA3CA5 /* MediaCache.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = MediaCache.xcodeproj; path = ../MediaCache.xcodeproj; sourceTree = "<group>"; };
+		2DDC743F2C201FA90023770C /* MediaCache */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = MediaCache; path = ../..; sourceTree = "<group>"; };
 		9C0842F42226372200EB8F85 /* MediaCacheDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MediaCacheDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C0842F72226372200EB8F85 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9C0842F92226372200EB8F85 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -56,25 +44,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2D5475C02C201F3500921FFF /* MediaCache.framework in Frameworks */,
+				2DDC74412C201FB10023770C /* MediaCache in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		564DEBB525B5790300AA3CA5 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				564DEBB925B5790300AA3CA5 /* MediaCache.framework */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		9C0842EB2226372200EB8F85 = {
 			isa = PBXGroup;
 			children = (
-				564DEBB425B5790300AA3CA5 /* MediaCache.xcodeproj */,
 				9C0842F62226372200EB8F85 /* MediaCacheDemo */,
 				9C0842F52226372200EB8F85 /* Products */,
 				9C9E4FB123D0122500007E6E /* Frameworks */,
@@ -92,6 +71,7 @@
 		9C0842F62226372200EB8F85 /* MediaCacheDemo */ = {
 			isa = PBXGroup;
 			children = (
+				2DDC743F2C201FA90023770C /* MediaCache */,
 				9C0842F72226372200EB8F85 /* AppDelegate.swift */,
 				9C0842F92226372200EB8F85 /* ViewController.swift */,
 				9C0842FB2226372200EB8F85 /* Main.storyboard */,
@@ -126,6 +106,9 @@
 			dependencies = (
 			);
 			name = MediaCacheDemo;
+			packageProductDependencies = (
+				2DDC74402C201FB10023770C /* MediaCache */,
+			);
 			productName = VideoCacheDemo;
 			productReference = 9C0842F42226372200EB8F85 /* MediaCacheDemo.app */;
 			productType = "com.apple.product-type.application";
@@ -157,28 +140,12 @@
 			mainGroup = 9C0842EB2226372200EB8F85;
 			productRefGroup = 9C0842F52226372200EB8F85 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 564DEBB525B5790300AA3CA5 /* Products */;
-					ProjectRef = 564DEBB425B5790300AA3CA5 /* MediaCache.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				9C0842F32226372200EB8F85 /* MediaCacheDemo */,
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		564DEBB925B5790300AA3CA5 /* MediaCache.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = MediaCache.framework;
-			remoteRef = 564DEBB825B5790300AA3CA5 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		9C0842F22226372200EB8F85 /* Resources */ = {
@@ -346,7 +313,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = W395RC57B2;
+				DEVELOPMENT_TEAM = QHQ974WAF6;
 				INFOPLIST_FILE = MediaCacheDemo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -364,7 +331,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = W395RC57B2;
+				DEVELOPMENT_TEAM = QHQ974WAF6;
 				INFOPLIST_FILE = MediaCacheDemo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -399,6 +366,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2DDC74402C201FB10023770C /* MediaCache */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MediaCache;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9C0842EC2226372200EB8F85 /* Project object */;
 }
