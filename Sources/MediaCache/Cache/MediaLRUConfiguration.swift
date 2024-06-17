@@ -69,8 +69,8 @@ extension MediaLRUConfiguration: MediaLRUConfigurationType {
     
     @discardableResult
     func synchronize() -> Bool {
-        guard let path = filePath else { return false }
-        return NSKeyedArchiver.archiveRootObject(self, toFile: path)
+        guard let fileURL else { return false }
+        return NSKeyedArchiver.archiveRootObject(self, toFile: fileURL.path)
     }
     
     // If accessTime weight is 1, visitTimes weight is 2
@@ -108,13 +108,13 @@ class MediaLRUConfiguration: NSObject, NSCoding {
     var timeWeight: Int = 2
     var useWeight: Int = 1
     
-    var filePath: String?
-    
+    var fileURL: URL?
+
     private var contentMap: [MediaCacheKeyType: LRUContent] = [:]
     
-    static func read(from filePath: String) -> MediaLRUConfiguration? {
-        let config = NSKeyedUnarchiver.unarchiveObject(withFile: filePath) as? MediaLRUConfiguration
-        config?.filePath = filePath
+    static func read(from fileURL: URL) -> MediaLRUConfiguration? {
+        let config = NSKeyedUnarchiver.unarchiveObject(withFile: fileURL.path) as? MediaLRUConfiguration
+        config?.fileURL = fileURL
         return config
     }
     
@@ -131,9 +131,9 @@ class MediaLRUConfiguration: NSObject, NSCoding {
         aCoder.encode(contentMap, forKey: "map")
     }
     
-    init(path: String) {
+    init(fileURL: URL) {
         super.init()
-        filePath = path
+        self.fileURL = fileURL
     }
     
     private let lock = NSLock()

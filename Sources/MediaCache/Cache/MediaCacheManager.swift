@@ -24,16 +24,20 @@ enum BoolValues {
     }
 }
 
+var temporaryDirectoryURL: URL {
+    return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+}
+
 let FileM = FileManager.default
 
 public class MediaCacheManager: NSObject {
     
     /// shared instance, directory default NSTemporaryDirectory/MediaCache
-    public static let `default` = MediaCacheManager(directory: NSTemporaryDirectory().appending("/soso/MediaCache"))
-    
+    public static let `default` = MediaCacheManager(directoryURL: temporaryDirectoryURL.appendingPathComponent("/soso/MediaCache"))
+
     /// default NSTemporaryDirectory/MediaCache/
-    public let directory: String
-    
+    public let directoryURL: URL
+
     /// default 1GB
     public var capacityLimit: Int64 = Int64(1).GB {
         didSet { checkAllow() }
@@ -72,10 +76,10 @@ public class MediaCacheManager: NSObject {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
-    public init(directory path: String) {
-        
-        directory = path
-        
+    public init(directoryURL: URL) {
+
+        self.directoryURL = directoryURL
+
         super.init()
         
         createCacheDirectory()
@@ -87,12 +91,12 @@ public class MediaCacheManager: NSObject {
     }
     
     private lazy var lru: MediaLRUConfiguration = {
-        let filePath = paths.lruFilePath()
-        if let lruConfig = MediaLRUConfiguration.read(from: filePath) {
-            lruConfig.filePath = filePath
+        let fileURL = paths.lruFileURL()
+        if let lruConfig = MediaLRUConfiguration.read(from: fileURL) {
+            lruConfig.fileURL = fileURL
             return lruConfig
         }
-        let lruConfig = MediaLRUConfiguration(path: filePath)
+        let lruConfig = MediaLRUConfiguration(fileURL: fileURL)
         lruConfig.synchronize()
         return lruConfig
     }()
@@ -151,10 +155,10 @@ extension MediaCacheManager {
 extension MediaCacheManager {
     
     private func createCacheDirectory() {
-        if !FileM.fileExists(atPath: directory) {
+        if !FileM.fileExists(atPath: directoryURL.path) {
             do {
-                try FileM.createDirectory(atPath: directory, withIntermediateDirectories: true, attributes: nil)
-                VLog(.info, "Video Cache directory path: \(directory)")
+                try FileM.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
+                VLog(.info, "Video Cache directory path: \(directoryURL.path)")
             } catch {
                 VLog(.error, "create cache directory error: \(error)")
             }
@@ -162,12 +166,12 @@ extension MediaCacheManager {
     }
     
     public func calculateSize() throws -> UInt64 {
-        let contents = try FileM.contentsOfDirectory(atPath: directory)
-        let calculateContent: (String) -> UInt64 = {
-            guard let attributes = try? FileM.attributesOfItem(atPath: self.directory.appending("/\($0)")) else { return 0 }
-            return (attributes as NSDictionary).fileSize()
+        let contents = try FileM.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: [.fileSizeKey], options: [])
+        let calculateContent: (URL) -> Int = {
+            guard let fileSize = try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize else { return 0 }
+            return fileSize
         }
-        return contents.reduce(0) { $0 + calculateContent($1) }
+        return UInt64(contents.reduce(0) { $0 + calculateContent($1) })
     }
     
     /// if cache key is nil, it will be filled by url.absoluteString's md5 string
@@ -179,18 +183,18 @@ extension MediaCacheManager {
             throw MediaCacheErrors.fileHandleWriting.error
         }
         
-        let infoPath = paths.contenInfoPath(for: url)
-        let configPath = paths.configurationPath(for: url)
-        let videoPath = paths.videoPath(for: url)
-        
+        let infoFileURL = paths.contenInfoFileURL(for: url)
+        let configFileURL = paths.configurationFileURL(for: url)
+        let videoFileURL = paths.videoFileURL(for: url)
+
         let cleanAllClosure = { [weak self] in
-            try FileM.removeItem(atPath: infoPath)
-            try FileM.removeItem(atPath: configPath)
-            try FileM.removeItem(atPath: videoPath)
+            try FileM.removeItem(atPath: infoFileURL.path)
+            try FileM.removeItem(atPath: configFileURL.path)
+            try FileM.removeItem(atPath: videoFileURL.path)
             self?.lru.delete(url: url)
         }
         
-        guard let config = paths.configuration(for: infoPath) else {
+        guard let config = paths.configuration(for: infoFileURL.path) else {
             try cleanAllClosure()
             return
         }
@@ -208,13 +212,16 @@ extension MediaCacheManager {
             return
         }
         
-        guard let fileHandle = FileHandle(forUpdatingAtPath: videoPath) else {
+        let fileHandle: FileHandle
+        do {
+            fileHandle = try FileHandle(forUpdating: videoFileURL)
+        } catch {
             try cleanAllClosure()
             return
         }
         
         do {
-            try FileM.removeItem(atPath: configPath)
+            try FileM.removeItem(atPath: configFileURL.path)
             if #available(iOS 13.0, *) {
                 try fileHandle.truncate(atOffset: UInt64(reservedLength))
                 try fileHandle.synchronize()
@@ -237,7 +244,7 @@ extension MediaCacheManager {
         let urls = downloadingUrls
         
         guard urls.count > 0 else {
-            try FileM.removeItem(atPath: directory)
+            try FileM.removeItem(at: directoryURL)
             createCacheDirectory()
             return
         }
@@ -248,13 +255,13 @@ extension MediaCacheManager {
         urls.forEach {
             downloadingURLs[paths.cacheFileName(for: $0.value)] = $0.value
             downloadingURLs[paths.configFileName(for: $0.value)] = $0.value
-            downloadingURLs[paths.contenInfoPath(for: $0.value)] = $0.value
+            downloadingURLs[paths.contenInfoFileURL(for: $0.value).path] = $0.value
         }
         
-        let contents = try FileM.contentsOfDirectory(atPath: directory).filter { downloadingURLs[$0] == nil }
-        
-        for content in contents {
-            try FileM.removeItem(atPath: directory.appending("/\(content)"))
+        let contentURLs = try FileM.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil).filter { downloadingURLs[$0.path] == nil }
+
+        for contentURL in contentURLs {
+            try FileM.removeItem(atPath: contentURL.path)
         }
     }
 }
@@ -286,7 +293,7 @@ extension MediaCacheManager {
 extension MediaCacheManager {
     
     var paths: MediaCachePaths {
-        return MediaCachePaths(directory: directory, convertion: fileNameConvertion)
+        return MediaCachePaths(directoryURL: directoryURL, convertion: fileNameConvertion)
     }
 }
 

@@ -40,8 +40,8 @@ class MediaFileHandle {
     
     let cacheFragments: [MediaCacheFragment]
     
-    let filePath: String
-    
+    let fileURL: URL
+
     let configuration: MediaConfiguration
     
     deinit {
@@ -60,12 +60,12 @@ class MediaFileHandle {
         self.url = url
         self.cacheFragments = cacheFragments
         
-        filePath = paths.videoPath(for: url)
+        fileURL = paths.videoFileURL(for: url)
+
+        VLog(.info, "Video path: \(fileURL)")
         
-        VLog(.info, "Video path: \(filePath)")
-        
-        if !FileM.fileExists(atPath: filePath) {
-            FileM.createFile(atPath: filePath, contents: nil, attributes: nil)
+        if !FileM.fileExists(atPath: fileURL.path) {
+            FileM.createFile(atPath: fileURL.path, contents: nil, attributes: nil)
         }
         
         configuration = paths.configuration(for: url)
@@ -73,9 +73,9 @@ class MediaFileHandle {
         NotificationCenter.default.addObserver(self, selector: #selector(applicationDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
     }
     
-    private lazy var readHandle = FileHandle(forReadingAtPath: filePath)
-    private lazy var writeHandle = FileHandle(forWritingAtPath: filePath)
-    
+    private lazy var readHandle = try? FileHandle(forReadingFrom: fileURL)
+    private lazy var writeHandle = try? FileHandle(forWritingTo: fileURL)
+
     private var isWriting: Bool = false
     
     private let lock = NSLock()
@@ -94,7 +94,7 @@ extension MediaFileHandle: MediaFileHandleType {
         get { return configuration.contentInfo }
         set {
             configuration.contentInfo = newValue
-            configuration.synchronize(to: paths.configurationPath(for: url))
+            configuration.synchronize(to: paths.configurationFileURL(for: url))
         }
     }
     
@@ -184,8 +184,8 @@ extension MediaFileHandle: MediaFileHandleType {
             handle.synchronizeFile()
         }
         
-        let configSyncResult = configuration.synchronize(to: paths.configurationPath(for: url))
-        
+        let configSyncResult = configuration.synchronize(to: paths.configurationFileURL(for: url))
+
         if notify {
             NotificationCenter.default.post(name: MediaFileHandle.didSynchronizeNotification,
                                             object: nil,

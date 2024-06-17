@@ -63,13 +63,13 @@ extension VideoResourceLoaderDelegate {
             return
         }
         
-        let videoPath = paths.videoPath(for: url)
-        guard let videoAtt = try? FileM.attributesOfItem(atPath: videoPath) as NSDictionary else { return }
+        let videoFileURL = paths.videoFileURL(for: url)
+        guard let videoAtt = try? FileM.attributesOfItem(atPath: videoFileURL.path) as NSDictionary else { return }
         let videoFileSize = videoAtt.fileSize()
         guard let maxRange = configuration.fragments.sorted(by: { $0.upperBound > $1.upperBound }).first else { return }
         if videoFileSize != maxRange.upperBound {
             configuration.reset(fragment: MediaRange(0, Int64(videoFileSize)))
-            configuration.synchronize(to: paths.configurationPath(for: url))
+            configuration.synchronize(to: paths.configurationFileURL(for: url))
         }
     }
     
@@ -85,7 +85,7 @@ extension VideoResourceLoaderDelegate {
             if paths.contentInfoIsExists(for: url) {
                 VLog(.error, "1 content info is exists, but cannot parse, need delete its video file")
                 do {
-                    try FileM.removeItem(atPath: paths.videoPath(for: url))
+                    try FileM.removeItem(atPath: paths.videoFileURL(for: url).path)
                     VLog(.info, "1 delete video: \(url)")
                 } catch {
                     VLog(.error, "1 delete video: \(url) failure: \(error)")
@@ -98,9 +98,9 @@ extension VideoResourceLoaderDelegate {
         
         configuration.contentInfo = contentInfo
         
-        let configurationPath = paths.configurationPath(for: url)
-        
-        guard let videoAtt = try? FileM.attributesOfItem(atPath: paths.videoPath(for: url)) as NSDictionary else {
+        let configurationPath = paths.configurationFileURL(for: url)
+
+        guard let videoAtt = try? FileM.attributesOfItem(atPath: paths.videoFileURL(for: url).path) as NSDictionary else {
             configuration.synchronize(to: configurationPath)
             return
         }
@@ -122,7 +122,7 @@ extension VideoResourceLoaderDelegate {
         if !configuration.synchronize(to: configurationPath) {
             VLog(.error, "2 configuration synchronize failed, need delete its video file")
             do {
-                try FileM.removeItem(atPath: paths.videoPath(for: url))
+                try FileM.removeItem(atPath: paths.videoFileURL(for: url).path)
                 VLog(.info, "2 delete video: \(url)")
             } catch {
                 VLog(.error, "2 delete video: \(url) failure: \(error)")

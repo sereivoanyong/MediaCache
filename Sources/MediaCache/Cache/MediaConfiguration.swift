@@ -25,7 +25,7 @@ protocol MediaConfigurationType: NSObjectProtocol {
     func add(fragment: MediaRange)
     
     @discardableResult
-    func synchronize(to path: String) -> Bool
+    func synchronize(to fileURL: URL) -> Bool
 }
 
 class MediaConfiguration: NSObject, NSCoding {
@@ -75,11 +75,11 @@ class MediaConfiguration: NSObject, NSCoding {
 extension MediaConfiguration: MediaConfigurationType {
     
     @discardableResult
-    func synchronize(to path: String) -> Bool {
+    func synchronize(to fileURL: URL) -> Bool {
         lock.lock()
         defer { lock.unlock() }
         lastTimeInterval = Date().timeIntervalSince1970
-        return NSKeyedArchiver.archiveRootObject(self, toFile: path)
+        return NSKeyedArchiver.archiveRootObject(self, toFile: fileURL.path)
     }
     
     func overlaps(_ range: MediaRange) -> [MediaRange] {

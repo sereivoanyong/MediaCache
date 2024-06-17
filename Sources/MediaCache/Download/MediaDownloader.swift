@@ -74,7 +74,7 @@ extension MediaDownloader: MediaDownloaderType {
         loadingRequest.contentInformationRequest?.update(contentInfo: fileHandle.contentInfo)
         
         if fileHandle.configuration.contentInfo.totalLength > 0 {
-            fileHandle.configuration.synchronize(to: paths.configurationPath(for: url))
+            fileHandle.configuration.synchronize(to: paths.configurationFileURL(for: url))
         }
         //        else if dataRequest.requestsAllDataToEndOfResource {
         //            toEnd = true

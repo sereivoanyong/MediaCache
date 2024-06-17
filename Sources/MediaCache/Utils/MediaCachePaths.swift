@@ -10,11 +10,11 @@ import Foundation
 
 struct MediaCachePaths {
     
-    var directory: String
+    var directoryURL: URL
     var convertion: ((_ identifier: String) -> String)?
     
-    init(directory: String, convertion: ((_ identifier: String) -> String)? = nil) {
-        self.directory = directory
+    init(directoryURL: URL, convertion: ((_ identifier: String) -> String)? = nil) {
+        self.directoryURL = directoryURL
         self.convertion = convertion
     }
 }
@@ -48,20 +48,20 @@ extension MediaCachePaths {
 
 extension MediaCachePaths {
     
-    func lruFilePath() -> String {
-        return directory.appending("/\(lruFileName).\(MediaCacheConfigFileExt)")
+    func lruFileURL() -> URL {
+        return directoryURL.appendingPathComponent("\(lruFileName).\(MediaCacheConfigFileExt)")
     }
     
-    func videoPath(for url: MediaURLType) -> String {
-        return directory.appending("/\(cacheFileName(for: url))")
+    func videoFileURL(for url: MediaURLType) -> URL {
+        return directoryURL.appendingPathComponent(cacheFileName(for: url))
     }
     
-    func configurationPath(for url: MediaURLType) -> String {
-        return directory.appending("/\(configFileName(for: url))")
+    func configurationFileURL(for url: MediaURLType) -> URL {
+        return directoryURL.appendingPathComponent(configFileName(for: url))
     }
     
-    func contenInfoPath(for url: MediaURLType) -> String {
-        return directory.appending("/\(contentFileName(for: url))")
+    func contenInfoFileURL(for url: MediaURLType) -> URL {
+        return directoryURL.appendingPathComponent(contentFileName(for: url))
     }
     
     public func cachedUrl(for cacheKey: MediaCacheKeyType) -> URL? {
@@ -69,28 +69,28 @@ extension MediaCachePaths {
     }
     
     func configuration(for url: MediaURLType) -> MediaConfiguration {
-        if let config = NSKeyedUnarchiver.unarchiveObject(withFile: configurationPath(for: url)) as? MediaConfiguration {
+        if let config = NSKeyedUnarchiver.unarchiveObject(withFile: configurationFileURL(for: url).path) as? MediaConfiguration {
             return config
         }
         let newConfig = MediaConfiguration(url: url)
         if let ext = url.url.contentType {
             newConfig.contentInfo.type = ext
         }
-        newConfig.synchronize(to: configurationPath(for: url))
+        newConfig.synchronize(to: configurationFileURL(for: url))
         return newConfig
     }
     
     func contentInfoIsExists(for url: MediaURLType) -> Bool {
-        let path = contenInfoPath(for: url)
-        return FileM.fileExists(atPath: path)
+        let fileURL = contenInfoFileURL(for: url)
+        return FileM.fileExists(atPath: fileURL.path)
     }
     
     func contentInfo(for url: MediaURLType) -> ContentInfo? {
         
-        let path = contenInfoPath(for: url)
+        let fileURL = contenInfoFileURL(for: url)
         
         guard
-            let jsonData = try? Data(contentsOf: URL(fileURLWithPath: path)),
+            let jsonData = try? Data(contentsOf: fileURL),
             let jsonObject = try? JSONSerialization.jsonObject(with: jsonData, options: [.fragmentsAllowed, .mutableContainers, .mutableLeaves]),
             let jsonKeyValues = jsonObject as? Dictionary<String, Any>
             else { return nil }
@@ -108,15 +108,15 @@ extension MediaCachePaths {
 
 extension MediaCachePaths {
     
-    func configurationPath(for cacheKey: MediaCacheKeyType) -> String? {
-        guard let subpaths = FileM.subpaths(atPath: directory) else { return nil }
+    func configurationURL(for cacheKey: MediaCacheKeyType) -> URL? {
+        guard let subpaths = FileM.subpaths(atPath: directoryURL.path) else { return nil }
         let filePrefix = cacheFileNamePrefix(for: cacheKey)
         guard let configFileName = subpaths.first(where: { $0.contains(filePrefix) && $0.hasSuffix("." + MediaCacheConfigFileExt) }) else { return nil }
-        return directory.appending("/\(configFileName)")
+        return directoryURL.appendingPathComponent(configFileName)
     }
     
     func configuration(for cacheKey: MediaCacheKeyType) -> MediaConfigurationType? {
-        guard let path = configurationPath(for: cacheKey) else { return nil }
-        return NSKeyedUnarchiver.unarchiveObject(withFile: path) as? MediaConfigurationType
+        guard let url = configurationURL(for: cacheKey) else { return nil }
+        return NSKeyedUnarchiver.unarchiveObject(withFile: url.path) as? MediaConfigurationType
     }
 }
