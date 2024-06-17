@@ -8,7 +8,7 @@
 
 import Foundation
 
-internal let error_domain = "com.video.cache.domain"
+let error_domain = "com.video.cache.domain"
 
 enum MediaCacheErrors {
     

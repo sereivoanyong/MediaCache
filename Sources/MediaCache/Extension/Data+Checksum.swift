@@ -10,23 +10,23 @@ import Foundation
 
 extension Data {
     
-    func checksum(split: Int64 = Int64(1).KB, vacuate: Int64? = nil) -> Bool {
+    func checksum(split: Int = 1024 /* 1 KB */, vacuate: Int? = nil) -> Bool {
         return (self as NSData).checksum(split: split)
     }
 }
 
 extension NSData {
     
-    func checksum(split: Int64, vacuate: Int64? = nil) -> Bool {
+    func checksum(split: Int, vacuate: Int? = nil) -> Bool {
 
         if isEmpty {
             return false
         }
         
-        let totalRange = MediaRange(0, Int64(count))
+        let totalRange = MediaRange(0, count)
 
         var splitRanges = totalRange.split(limit: split).filter { $0.isValid }
-        let vacuateCount: Int64 = vacuate ?? Int64(sqrt(Double(splitRanges.count)))
+        let vacuateCount = vacuate ?? Int(sqrt(Double(splitRanges.count)))
 
         let results: [MediaRange] = (0..<vacuateCount).compactMap { _ in
             let index = Int.random(in: splitRanges.indices)
@@ -35,7 +35,7 @@ extension NSData {
         
         for range in results {
             
-            let r = NSRange(location: Int(range.lowerBound), length: Int(range.length))
+            let r = NSRange(location: range.lowerBound, length: range.length)
             
             let data = subdata(with: r)
             

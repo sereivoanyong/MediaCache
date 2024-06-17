@@ -9,24 +9,6 @@
 import Foundation
 import AVFoundation
 
-protocol MediaDownloaderType: NSObjectProtocol {
-    
-    var delegate: MediaDownloaderDelegate? { get set }
-    
-    var url: MediaURLType { get }
-    
-    var loadingRequest: AVAssetResourceLoadingRequest { get }
-    
-    var id: Int { get }
-    
-    var task: URLSessionDataTask? { get }
-    var dataReceiver: URLSessionDataDelegate? { get }
-    
-    func finish()
-    func cancel()
-    func execute()
-}
-
 protocol MediaDownloaderDelegate: NSObjectProtocol {
     
     func downloaderAllowWriteData(_ downloader: MediaDownloader) -> Bool
@@ -34,7 +16,7 @@ protocol MediaDownloaderDelegate: NSObjectProtocol {
     func downloader(_ downloader: MediaDownloader, finishWith error: Error?)
 }
 
-extension MediaDownloader: MediaDownloaderType {
+extension MediaDownloader {
     
     var dataReceiver: URLSessionDataDelegate? {
         return dataDelegate
@@ -73,7 +55,7 @@ extension MediaDownloader: MediaDownloaderType {
         
         loadingRequest.contentInformationRequest?.update(contentInfo: fileHandle.contentInfo)
         
-        if fileHandle.configuration.contentInfo.totalLength > 0 {
+        if fileHandle.configuration.contentInfo.contentLength > 0 {
             fileHandle.configuration.synchronize(to: paths.configurationFileURL(for: url))
         }
         //        else if dataRequest.requestsAllDataToEndOfResource {
@@ -81,15 +63,15 @@ extension MediaDownloader: MediaDownloaderType {
         //        }
         
         if toEnd {
-            let offset: Int64 = 0
-            let length: Int64 = 2
+            let offset: Int = 0
+            let length: Int = 2
             let range = MediaRange(offset, length)
             VLog(.info, "downloader id: \(id), wants: \(offset) to end")
             actions = fileHandle.actions(for: range)
             VLog(.request, "downloader id: \(id), actions: \(actions)")
         } else {
-            let offset = Int64(dataRequest.requestedOffset)
-            let length = Int64(dataRequest.requestedLength)
+            let offset = Int(dataRequest.requestedOffset)
+            let length = Int(dataRequest.requestedLength)
             let range = MediaRange(offset, offset + length)
             VLog(.info, "downloader id: \(id), wants: \(range)")
             actions = fileHandle.actions(for: range)
@@ -102,13 +84,13 @@ extension MediaDownloader: MediaDownloaderType {
 private var private_id: Int = 0
 private var accId: Int { private_id += 1; return private_id }
 
-class MediaDownloader: NSObject {
-    
+final class MediaDownloader: NSObject {
+
     weak var delegate: MediaDownloaderDelegate?
     
     let paths: MediaCachePaths
     
-    let url: MediaURLType
+    let url: MediaURL
     
     let loadingRequest: AVAssetResourceLoadingRequest
     
@@ -123,7 +105,7 @@ class MediaDownloader: NSObject {
     
     init(paths: MediaCachePaths,
          session: URLSession?,
-         url: MediaURLType,
+         url: MediaURL,
          loadingRequest: AVAssetResourceLoadingRequest,
          fileHandle: MediaFileHandle,
          useChecksum: Bool) {
@@ -156,7 +138,7 @@ class MediaDownloader: NSObject {
     
     private var isCancelled: Bool = false
     
-    private var writeOffset: Int64 = 0
+    private var writeOffset: Int = 0
 }
 
 extension MediaDownloader {
@@ -166,8 +148,7 @@ extension MediaDownloader {
         fileHandle.contentInfo = contentInfo
     }
     
-    @objc
-    func actionLoop() {
+    @objc func actionLoop() {
         if isCancelled {
             VLog(.info, "this downloader is cancelled, callback cancelled message and return")
             finishLoading(error: MediaCacheErrors.cancelled.error)
@@ -180,8 +161,10 @@ extension MediaDownloader {
         let action = actions.removeFirst()
         currentAction = action
         switch action {
-        case .local(let range): read(from: range)
-        case .remote(let range): download(for: range)
+        case .local(let range):
+            read(from: range)
+        case .remote(let range): 
+            download(for: range)
         }
     }
 }
@@ -223,7 +206,6 @@ extension MediaDownloader {
     }
     
     func download(for range: MediaRange) {
-        
         VLog(.info, "downloader id: \(id), download range: (\(range)) length: \(range.length)")
         guard let originUrl = loadingRequest.request.url?.originUrl else {
             finishLoading(error: MediaCacheErrors.badUrl.error)
@@ -247,10 +229,9 @@ extension MediaDownloader {
     }
     
     func write(data: Data) {
-        
         guard let allow = delegate?.downloaderAllowWriteData(self), allow else { return }
         
-        let range = MediaRange(writeOffset, writeOffset + Int64(data.count))
+        let range = MediaRange(writeOffset, writeOffset + data.count)
         VLog(.data, "downloader id: \(id), write data range: (\(range)) length: \(range.length)")
         do {
             try fileHandle.writeData(data: data, for: range)
@@ -286,7 +267,7 @@ extension MediaDownloader {
     func downloadFinishLoading() {
         if toEnd {
             toEnd.toggle()
-            actions = fileHandle.actions(for: MediaRange(0, fileHandle.contentInfo.totalLength))
+            actions = fileHandle.actions(for: MediaRange(0, fileHandle.contentInfo.contentLength))
         }
         do {
             try fileHandle.synchronize(notify: true)
@@ -310,23 +291,21 @@ extension MediaDownloader {
 
 extension MediaDownloader: DownloaderSessionDelegateDelegate {
     
-    func downloaderSession(_ delegate: DownloaderSessionDelegateType,
-                           didReceive response: URLResponse) {
-        if response.isMediaSource, fileHandle.isNeedUpdateContentInfo {
+    func downloaderSession(_ delegate: DownloaderSessionDelegateType, didReceive response: URLResponse) {
+        assert(response is HTTPURLResponse)
+        if fileHandle.isNeedUpdateContentInfo, let response = response as? HTTPURLResponse {
             update(contentInfo: ContentInfo(response: response))
         }
     }
     
-    func downloaderSession(_ delegate: DownloaderSessionDelegateType,
-                           didReceive data: Data) {
+    func downloaderSession(_ delegate: DownloaderSessionDelegateType, didReceive data: Data) {
         if isCancelled { return }
         write(data: data)
         loadingRequest.dataRequest?.respond(with: data)
     }
     
-    func downloaderSession(_ delegate: DownloaderSessionDelegateType,
-                           didCompleteWithError error: Error?) {
-        guard let `error` = error else {
+    func downloaderSession(_ delegate: DownloaderSessionDelegateType, didCompleteWithError error: Error?) {
+        guard let error else {
             downloadFinishLoading()
             return
         }
@@ -353,7 +332,7 @@ protocol DownloaderSessionDelegateDelegate: NSObjectProtocol {
     func downloaderSession(_ delegate: DownloaderSessionDelegateType, didCompleteWithError error: Error?)
 }
 
-private let DownloadBufferLimit: Int = 32.KB
+private let DownloadBufferLimit: Int = 32 * 1024 // 32 KB
 
 private class DownloaderSessionDelegate: NSObject, DownloaderSessionDelegateType {
     
@@ -370,12 +349,9 @@ private class DownloaderSessionDelegate: NSObject, DownloaderSessionDelegateType
         self.delegate = delegate
     }
     
-    func urlSession(_ session: URLSession,
-                    dataTask: URLSessionDataTask,
-                    didReceive response: URLResponse,
-                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
         VLog(.data, "task: \(dataTask) did receive response: \(response)")
-        guard response.isMediaSource else {
+        guard let mimeType = response.mimeType, (mimeType.hasPrefix("video") || mimeType.hasPrefix("audio") || mimeType.hasPrefix("application")) else {
             delegate?.downloaderSession(self, didCompleteWithError: MediaCacheErrors.notMedia.error)
             completionHandler(.cancel)
             return
@@ -384,10 +360,7 @@ private class DownloaderSessionDelegate: NSObject, DownloaderSessionDelegateType
         completionHandler(.allow)
     }
     
-    func urlSession(_ session: URLSession,
-                    dataTask: URLSessionDataTask,
-                    didReceive data: Data) {
-        
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         VLog(.data, "task: \(dataTask) did receive data: \(data.count)")
         
         bufferData.append(data)
@@ -416,10 +389,7 @@ private class DownloaderSessionDelegate: NSObject, DownloaderSessionDelegateType
         delegate?.downloaderSession(self, didReceive: chunkData)
     }
     
-    func urlSession(_ session: URLSession,
-                    task: URLSessionTask,
-                    didCompleteWithError error: Error?) {
-        
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         VLog(.request, "task: \(task) did complete with error: \(String(describing: error))")
         
         let bufferCount = bufferData.count

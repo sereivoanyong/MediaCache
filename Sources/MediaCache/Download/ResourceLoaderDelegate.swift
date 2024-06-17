@@ -13,27 +13,27 @@ extension VideoResourceLoaderDelegate {
     var manager: MediaCacheManager { return mgr ?? MediaCacheManager.default }
 }
 
-class VideoResourceLoaderDelegate: NSObject {
-    
+final class VideoResourceLoaderDelegate: NSObject {
+
     private weak var mgr: MediaCacheManager?
     
     var allowsCellularAccess: Bool = true
     
     var useChecksum: Bool = false
     
-    let url: MediaURLType
+    let url: MediaURL
     
     let cacheFragments: [MediaCacheFragment]
     
-    var loaders: [String: MediaLoaderType] = [:]
-    
+    var loaders: [URL: MediaLoader] = [:]
+
     deinit {
         VLog(.info, "VideoResourceLoaderDelegate deinit\n")
         loaders.removeAll()
         manager.removeDownloading(url: url)
     }
     
-    init(manager: MediaCacheManager, url: MediaURLType, cacheFragments: [MediaCacheFragment]) {
+    init(manager: MediaCacheManager, url: MediaURL, cacheFragments: [MediaCacheFragment]) {
         self.mgr = manager
         self.url = url
         self.cacheFragments = cacheFragments
@@ -64,16 +64,15 @@ extension VideoResourceLoaderDelegate {
         }
         
         let videoFileURL = paths.videoFileURL(for: url)
-        guard let videoAtt = try? FileM.attributesOfItem(atPath: videoFileURL.path) as NSDictionary else { return }
-        let videoFileSize = videoAtt.fileSize()
+        let videoFileSize = (try? videoFileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard let maxRange = configuration.fragments.sorted(by: { $0.upperBound > $1.upperBound }).first else { return }
         if videoFileSize != maxRange.upperBound {
-            configuration.reset(fragment: MediaRange(0, Int64(videoFileSize)))
+            configuration.reset(fragment: MediaRange(0, videoFileSize))
             configuration.synchronize(to: paths.configurationFileURL(for: url))
         }
     }
     
-    private func checkAlreadyOverCache(url: MediaURLType, paths: MediaCachePaths) {
+    private func checkAlreadyOverCache(url: MediaURL, paths: MediaCachePaths) {
         
         VLog(.info, "Check already over cahce file")
         
@@ -81,22 +80,7 @@ extension VideoResourceLoaderDelegate {
         
         guard configuration.fragments.isEmpty else { return }
         
-        guard let contentInfo = paths.contentInfo(for: url) else {
-            if paths.contentInfoIsExists(for: url) {
-                VLog(.error, "1 content info is exists, but cannot parse, need delete its video file")
-                do {
-                    try FileM.removeItem(atPath: paths.videoFileURL(for: url).path)
-                    VLog(.info, "1 delete video: \(url)")
-                } catch {
-                    VLog(.error, "1 delete video: \(url) failure: \(error)")
-                }
-            }
-            return
-        }
-        
-        VLog(.info, "Found already over content info: \(contentInfo.description)")
-        
-        configuration.contentInfo = contentInfo
+        VLog(.info, "Found already over content info: \(configuration.contentInfo)")
         
         let configurationPath = paths.configurationFileURL(for: url)
 
@@ -105,8 +89,8 @@ extension VideoResourceLoaderDelegate {
             return
         }
         
-        let videoFileSize = videoAtt.fileSize()
-        
+        let videoFileSize = Int(videoAtt.fileSize())
+
         VLog(.data, "Found already over cache size: \(videoFileSize)")
         
         guard videoFileSize > 0 else {
@@ -114,11 +98,9 @@ extension VideoResourceLoaderDelegate {
             return
         }
         
-        let length = Int64(videoFileSize)
-        
-        configuration.reservedLength = length
-        configuration.add(fragment: MediaRange(0, length))
-        
+        configuration.reservedLength = videoFileSize
+        configuration.add(fragment: MediaRange(0, videoFileSize))
+
         if !configuration.synchronize(to: configurationPath) {
             VLog(.error, "2 configuration synchronize failed, need delete its video file")
             do {
@@ -133,37 +115,30 @@ extension VideoResourceLoaderDelegate {
 
 extension VideoResourceLoaderDelegate: AVAssetResourceLoaderDelegate {
     
-    func resourceLoader(_ resourceLoader: AVAssetResourceLoader,
-                        shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest) -> Bool {
+    func resourceLoader(_ resourceLoader: AVAssetResourceLoader, shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest) -> Bool {
         VLog(.info, "VideoResourceLoaderDelegate shouldWaitForLoadingOfRequestedResource loadingRequest: \(loadingRequest)\n")
-        guard
-            let resourceURL = loadingRequest.request.url,
-            resourceURL.isCacheScheme else {
-            return false
-        }
-        if let loader = loaders[resourceURL.absoluteString] {
+        guard let resourceURL = loadingRequest.request.url, resourceURL.isCacheScheme else { return false }
+        if let loader = loaders[resourceURL] {
             loader.add(loadingRequest: loadingRequest)
         } else {
-            let newLoader = MediaLoader(paths: manager.paths,
-                                        url: url,
-                                        cacheFragments: cacheFragments,
-                                        allowsCellularAccess: allowsCellularAccess,
-                                        useChecksum: useChecksum,
-                                        delegate: self)
-            loaders[resourceURL.absoluteString] = newLoader
+            let newLoader = MediaLoader(
+                paths: manager.paths,
+                url: url,
+                cacheFragments: cacheFragments,
+                allowsCellularAccess: allowsCellularAccess,
+                useChecksum: useChecksum,
+                delegate: self
+            )
+            loaders[resourceURL] = newLoader
             newLoader.add(loadingRequest: loadingRequest)
         }
         return true
     }
     
-    func resourceLoader(_ resourceLoader: AVAssetResourceLoader,
-                        didCancel loadingRequest: AVAssetResourceLoadingRequest) {
+    func resourceLoader(_ resourceLoader: AVAssetResourceLoader, didCancel loadingRequest: AVAssetResourceLoadingRequest) {
         VLog(.info, "VideoResourceLoaderDelegate didCancel loadingRequest: \(loadingRequest)\n")
-        guard
-            let resourceURL = loadingRequest.request.url,
-            resourceURL.isCacheScheme
-            else { return }
-        loaders[resourceURL.absoluteString]?.remove(loadingRequest: loadingRequest)
+        guard let resourceURL = loadingRequest.request.url, resourceURL.isCacheScheme else { return }
+        loaders[resourceURL]?.remove(loadingRequest: loadingRequest)
     }
 }
 

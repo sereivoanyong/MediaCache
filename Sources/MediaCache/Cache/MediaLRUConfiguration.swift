@@ -8,69 +8,59 @@
 
 import Foundation
 
-public protocol MediaLRUConfigurationType {
-    
-    func update(visitTimes timesWeigth: Int, accessTime timeWeight: Int)
-    
-    @discardableResult
-    func visit(url: MediaURLType) -> Bool
-    
-    @discardableResult
-    func delete(url: MediaURLType) -> Bool
-    
-    @discardableResult
-    func deleteAll(without downloading: [MediaCacheKeyType: MediaURLType]) -> Bool
-    
-    @discardableResult
-    func synchronize() -> Bool
-    
-    func oldestURL(maxLength: Int, without downloading: [MediaCacheKeyType: MediaURLType]) -> [MediaURLType]
-}
-
-extension MediaLRUConfiguration: MediaLRUConfigurationType {
+extension MediaLRUConfiguration {
     
     /// visitTimes timesWeigth default 1, accessTime timeWeight default 2
-    func update(visitTimes timesWeigth: Int, accessTime timeWeight: Int) {
+    public func update(visitTimes timesWeigth: Int, accessTime timeWeight: Int) {
         self.useWeight = timesWeigth
         self.timeWeight = timeWeight
         synchronize()
     }
     
     @discardableResult
-    func visit(url: MediaURLType) -> Bool {
+    public func visit(url: MediaURL) -> Bool {
         VLog(.info, "use url: \(url)")
-        lock.lock()
-        defer { lock.unlock() }
-        if let content = contentMap[url.key] {
-            content.use()
-        } else {
-            let content = LRUContent(url: url)
-            contentMap[url.key] = content
+        return lock.sync {
+            if let content = contentMap[url.cacheKey] {
+                content.use()
+            } else {
+                let content = LRUContent(url: url)
+                contentMap[url.cacheKey] = content
+            }
+            return synchronize()
         }
-        return synchronize()
     }
     
     @discardableResult
-    func delete(url: MediaURLType) -> Bool {
+    public func delete(url: MediaURL) -> Bool {
         VLog(.info, "delete url: \(url)")
-        lock.lock()
-        defer { lock.unlock() }
-        contentMap.removeValue(forKey: url.key)
-        return synchronize()
+        return lock.sync {
+            contentMap.removeValue(forKey: url.cacheKey)
+            return synchronize()
+        }
     }
     
     @discardableResult
-    func deleteAll(without downloading: [MediaCacheKeyType: MediaURLType]) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        contentMap = contentMap.filter { downloading[$0.key] != nil }
-        return synchronize()
+    public func deleteAll(without downloading: [MediaCacheKey: MediaURL]) -> Bool {
+        lock.sync {
+            contentMap = contentMap.filter { downloading[$0.key] != nil }
+            return synchronize()
+        }
     }
     
     @discardableResult
-    func synchronize() -> Bool {
+    public func synchronize() -> Bool {
         guard let fileURL else { return false }
-        return NSKeyedArchiver.archiveRootObject(self, toFile: fileURL.path)
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(self)
+            try data.write(to: fileURL)
+            return true
+        } catch {
+            return false
+        }
     }
     
     // If accessTime weight is 1, visitTimes weight is 2
@@ -83,99 +73,93 @@ extension MediaLRUConfiguration: MediaLRUConfigurationType {
     // result sorted:       [C(5), E(9), D(10), A(11), B(14), F(14)]
     // oldest:              C(5)
     
-    func oldestURL(maxLength: Int = 1, without downloading: [MediaCacheKeyType: MediaURLType]) -> [MediaURLType] {
-        
-        lock.lock()
-        defer { lock.unlock() }
-        
-        let urls = contentMap.filter { downloading[$0.key] == nil }.values
-        
-        VLog(.info, "urls: \(urls)")
-        
-        guard urls.count > maxLength else { return urls.compactMap { $0.url} }
-        
-        urls.sorted { $0.time < $1.time }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * timeWeight }
-        urls.sorted { $0.count < $1.count }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * useWeight }
-        
-        return urls.sorted(by: { $0.weight < $1.weight }).prefix(maxLength).compactMap { $0.url }
+    public func oldestURL(maxLength: Int = 1, without downloading: [MediaCacheKey: MediaURL]) -> [MediaURL] {
+        lock.sync {
+          let urls = contentMap.filter { downloading[$0.key] == nil }.values
+
+          VLog(.info, "urls: \(urls)")
+
+          guard urls.count > maxLength else { return urls.compactMap { $0.url} }
+
+          urls.sorted { $0.time < $1.time }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * timeWeight }
+          urls.sorted { $0.count < $1.count }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * useWeight }
+
+          return urls.sorted(by: { $0.weight < $1.weight }).prefix(maxLength).compactMap { $0.url }
+        }
     }
 }
 
-let lruFileName = "lru"
+final public class MediaLRUConfiguration {
 
-class MediaLRUConfiguration: NSObject, NSCoding {
-    
     var timeWeight: Int = 2
     var useWeight: Int = 1
     
     var fileURL: URL?
 
-    private var contentMap: [MediaCacheKeyType: LRUContent] = [:]
+    private var contentMap: [MediaCacheKey: LRUContent] = [:]
     
     static func read(from fileURL: URL) -> MediaLRUConfiguration? {
-        let config = NSKeyedUnarchiver.unarchiveObject(withFile: fileURL.path) as? MediaLRUConfiguration
-        config?.fileURL = fileURL
-        return config
-    }
-    
-    required init?(coder aDecoder: NSCoder) {
-        super.init()
-        timeWeight = aDecoder.decodeInteger(forKey: "timeWeight")
-        useWeight = aDecoder.decodeInteger(forKey: "useWeight")
-        contentMap = (aDecoder.decodeObject(forKey: "map") as? [MediaCacheKeyType: LRUContent]) ?? [:]
-    }
-    
-    func encode(with aCoder: NSCoder) {
-        aCoder.encode(timeWeight, forKey: "timeWeight")
-        aCoder.encode(useWeight, forKey: "useWeight")
-        aCoder.encode(contentMap, forKey: "map")
+        guard let data = try? Data(contentsOf: fileURL) else { return nil }
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let config = try decoder.decode(MediaLRUConfiguration.self, from: data)
+            config.fileURL = fileURL
+            return config
+        } catch {
+            print(error)
+            return nil
+        }
     }
     
     init(fileURL: URL) {
-        super.init()
         self.fileURL = fileURL
     }
     
     private let lock = NSLock()
 }
 
+extension MediaLRUConfiguration: Codable {
+  
+  private enum CodingKeys: String, CodingKey {
+
+    case timeWeight
+    case useWeight
+    case contentMap
+  }
+}
+
 extension LRUContent {
     
     func use() {
-        time = Date().timeIntervalSince1970
+        time = Date()
         count += 1
     }
 }
 
-class LRUContent: NSObject, NSCoding {
+final class LRUContent {
+
+    let url: MediaURL
     
-    var time: TimeInterval = Date().timeIntervalSince1970
-    
-    var count: Int = 1
+    var time: Date
+
+    var count: Int
     
     var weight: Int = 0
     
-    let url: MediaURL
-    
-    init(url: MediaURLType) {
-        self.url = MediaURL(cacheKey: url.key, originUrl: url.url)
-        super.init()
+    init(url: MediaURL) {
+        self.url = MediaURL(cacheKey: url.cacheKey, url: url.url)
+        self.time = Date()
+        self.count = 1
     }
-    
-    override var description: String {
-        return ["time": time, "count": count, "weight": weight, "url": url].description
-    }
-    
-    required init?(coder aDecoder: NSCoder) {
-        url = aDecoder.decodeObject(forKey: "url") as! MediaURL
-        super.init()
-        time = aDecoder.decodeDouble(forKey: "time")
-        count = aDecoder.decodeInteger(forKey: "count")
-    }
-    
-    func encode(with aCoder: NSCoder) {
-        aCoder.encode(url, forKey: "url")
-        aCoder.encode(time, forKey: "time")
-        aCoder.encode(count, forKey: "count")
-    }
+}
+
+extension LRUContent: Codable {
+
+  private enum CodingKeys: String, CodingKey {
+
+    case url
+    case time
+    case count
+  }
 }

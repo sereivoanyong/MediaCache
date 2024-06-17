@@ -14,12 +14,12 @@ extension AVPlayerItem {
     /// if cache key is nil, it will be filled by url.absoluteString's md5 string
     public convenience init(manager: MediaCacheManager = MediaCacheManager.default,
                             remote url: URL,
-                            cacheKey key: MediaCacheKeyType? = nil,
+                            cacheKey: MediaCacheKey? = nil,
                             cacheFragments: [MediaCacheFragment] = [.prefix(.max)]) {
         
-        let `key` = key ?? url.absoluteString.mediaCacheMD5
-        
-        let videoUrl = MediaURL(cacheKey: key, originUrl: url)
+        let cacheKey = cacheKey ?? url.absoluteString.mediaCacheMD5
+
+        let videoUrl = MediaURL(cacheKey: cacheKey, url: url)
         manager.visit(url: videoUrl)
         
         let loaderDelegate = VideoResourceLoaderDelegate(manager: manager,

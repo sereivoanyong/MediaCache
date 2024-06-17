@@ -8,13 +8,6 @@
 
 import Foundation
 
-public extension Range {
-    
-    init(_ lower: Bound, _ upper: Bound) {
-        self.init(uncheckedBounds: (lower, upper))
-    }
-}
-
 public extension ClosedRange {
     
     init(_ lower: Bound, _ upper: Bound) {
@@ -22,18 +15,7 @@ public extension ClosedRange {
     }
 }
 
-extension ClosedRange where Bound == Int64 {
-    
-    var range: CodingRange {
-        return CodingRange(lowerBound: lowerBound, upperBound: upperBound)
-    }
-    
-    init(range: CodingRange) {
-        self.init(uncheckedBounds: (range.lowerBound, range.upperBound))
-    }
-}
-
-extension ClosedRange where Bound == Int64 {
+extension ClosedRange where Bound == Int {
     
     var isValid: Bool {
         return lowerBound != upperBound
@@ -44,7 +26,7 @@ extension ClosedRange where Bound == Int64 {
     }
 }
 
-extension ClosedRange where Bound == Int64 {
+extension ClosedRange where Bound == Int {
     
     func union(_ other: ClosedRange) -> ClosedRange {
         let lowerBound = Swift.min(self.lowerBound, other.lowerBound)

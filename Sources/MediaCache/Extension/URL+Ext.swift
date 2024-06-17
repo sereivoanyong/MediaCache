@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import MobileCoreServices
 
 extension URL {
     
@@ -19,9 +18,5 @@ extension URL {
     
     var originUrl: URL {
         return URL(string: absoluteString.replacingOccurrences(of: URL.MediaCacheScheme, with: "")) ?? self
-    }
-    
-    var contentType: String? {
-        return UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, pathExtension as CFString, nil)?.takeRetainedValue() as String?
     }
 }

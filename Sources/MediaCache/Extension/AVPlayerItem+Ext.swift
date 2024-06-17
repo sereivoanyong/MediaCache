@@ -10,9 +10,9 @@ import AVFoundation
 
 extension AVPlayerItem {
     
-    private static var loaderDelegateKey = arc4random()
+    private static var loaderDelegateKey: Void?
     var resourceLoaderDelegate: VideoResourceLoaderDelegate? {
-        get { return objc_getAssociatedObject(self, &AVPlayerItem.loaderDelegateKey) as? VideoResourceLoaderDelegate }
-        set { objc_setAssociatedObject(self, &AVPlayerItem.loaderDelegateKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)}
+        get { return objc_getAssociatedObject(self, &Self.loaderDelegateKey) as? VideoResourceLoaderDelegate }
+        set { objc_setAssociatedObject(self, &Self.loaderDelegateKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)}
     }
 }

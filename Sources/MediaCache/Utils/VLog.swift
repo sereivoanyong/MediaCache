@@ -33,3 +33,14 @@ func VLog(file: String = #file, line: Int = #line, fun: String = #function, _ le
         Swift.print("[Video Cache] [\(level.description)] file: \(file.components(separatedBy: "/").last ?? "none"), line: \(line), func: \(fun): \(message)")
     }
 }
+
+extension NSLocking {
+
+  @inlinable
+  func sync<Result>(_ body: () throws -> Result) rethrows -> Result {
+    lock()
+    let result = try body()
+    unlock()
+    return result
+  }
+}

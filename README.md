@@ -11,7 +11,7 @@ import MediaCache
 
 // setup
 MediaCacheManager.logLevel = .error
-MediaCacheManager.default.capacityLimit = Int64(1).GB
+MediaCacheManager.default.capacityLimit = 1024 * 1024 * 1024 // 1 GB
 .
 .
 .

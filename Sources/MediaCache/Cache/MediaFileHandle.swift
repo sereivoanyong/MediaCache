@@ -9,32 +9,11 @@
 import Foundation
 import UIKit
 
-internal let PacketLimit: Int64 = Int64(1).MB
+let PacketLimit: Int = 1024 * 1024 // 1 MB
 
-protocol MediaFileHandleType {
-    
-    var configuration: MediaConfiguration { get }
-    
-    func actions(for range: MediaRange) -> [Action]
-    
-    func readData(for range: MediaRange) throws -> Data
-    
-    func writeData(data: Data, for range: MediaRange) throws
-    
-    @discardableResult
-    func synchronize(notify: Bool) throws -> Bool
-    
-    func close() throws
-}
+final class MediaFileHandle {
 
-extension MediaFileHandleType {
-    
-    var isNeedUpdateContentInfo: Bool { return configuration.contentInfo.totalLength <= 0 }
-}
-
-class MediaFileHandle {
-    
-    let url: MediaURLType
+    let url: MediaURL
     
     let paths: MediaCachePaths
     
@@ -44,18 +23,7 @@ class MediaFileHandle {
 
     let configuration: MediaConfiguration
     
-    deinit {
-        do {
-            try synchronize(notify: false)
-            try close()
-        } catch {
-            VLog(.error, "fileHandle synchronize and close failure: \(error)")
-        }
-        NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
-    }
-    
-    init(paths: MediaCachePaths, url: MediaURLType, cacheFragments: [MediaCacheFragment]) {
-        
+    init(paths: MediaCachePaths, url: MediaURL, cacheFragments: [MediaCacheFragment]) {
         self.paths = paths
         self.url = url
         self.cacheFragments = cacheFragments
@@ -72,7 +40,17 @@ class MediaFileHandle {
         
         NotificationCenter.default.addObserver(self, selector: #selector(applicationDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
     }
-    
+
+    deinit {
+      do {
+          try synchronize(notify: false)
+          try close()
+      } catch {
+          VLog(.error, "fileHandle synchronize and close failure: \(error)")
+      }
+      NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
+    }
+
     private lazy var readHandle = try? FileHandle(forReadingFrom: fileURL)
     private lazy var writeHandle = try? FileHandle(forWritingTo: fileURL)
 
@@ -85,11 +63,15 @@ extension MediaFileHandle {
     
     static let VideoURLKey: String = "VideoURLKey"
     
-    static let didSynchronizeNotification: NSNotification.Name = NSNotification.Name("VideoFileHandle.didSynchronizeNotification")
+    static let didSynchronizeNotification = Notification.Name("VideoFileHandleDidSynchronizeNotificationName")
 }
 
-extension MediaFileHandle: MediaFileHandleType {
-    
+extension MediaFileHandle {
+
+    var isNeedUpdateContentInfo: Bool {
+        return configuration.contentInfo.contentLength <= 0
+    }
+
     var contentInfo: ContentInfo {
         get { return configuration.contentInfo }
         set {
@@ -121,78 +103,70 @@ extension MediaFileHandle: MediaFileHandleType {
     }
     
     func readData(for range: MediaRange) throws -> Data {
-        
-        lock.lock()
-        defer { lock.unlock() }
-        
-        let data: Data
-        if #available(iOS 13.0, *) {
-            try readHandle?.seek(toOffset: UInt64(range.lowerBound))
-            if #available(iOS 13.4, *) {
-                data = try readHandle?.read(upToCount: Int(range.length)) ?? Data()
+        try lock.sync {
+            let data: Data
+            if #available(iOS 13.0, *) {
+                try readHandle?.seek(toOffset: UInt64(range.lowerBound))
+                if #available(iOS 13.4, *) {
+                    data = try readHandle?.read(upToCount: Int(range.length)) ?? Data()
+                } else {
+                    data = readHandle?.readData(ofLength: Int(range.length)) ?? Data()
+                }
             } else {
+                readHandle?.seek(toFileOffset: UInt64(range.lowerBound))
                 data = readHandle?.readData(ofLength: Int(range.length)) ?? Data()
             }
-        } else {
-            readHandle?.seek(toFileOffset: UInt64(range.lowerBound))
-            data = readHandle?.readData(ofLength: Int(range.length)) ?? Data()
+            return data
         }
-        return data
     }
     
     func writeData(data: Data, for range: MediaRange) throws {
-        
-        lock.lock()
-        defer { lock.unlock() }
-        
-        guard let handle = writeHandle else { return }
-        
-        let containsRanges = cacheFragments.compactMap { $0.ranges(for: contentInfo.totalLength) }
-        
-        guard containsRanges.overlaps(range) else { return }
-        
-        isWriting = true
-        
-        VLog(.data, "write data: \(data), for: \(range)")
-        
-        if #available(iOS 13.0, *) {
-            try handle.seek(toOffset: UInt64(range.lowerBound))
+        try lock.sync {
+          guard let writeHandle else { return }
+
+          let containsRanges = cacheFragments.compactMap { $0.ranges(for: contentInfo.contentLength) }
+
+          guard containsRanges.overlaps(range) else { return }
+
+          isWriting = true
+
+          VLog(.data, "write data: \(data), for: \(range)")
+
+          if #available(iOS 13.0, *) {
+            try writeHandle.seek(toOffset: UInt64(range.lowerBound))
             if #available(iOS 13.4, *) {
-                try handle.write(contentsOf: data)
+              try writeHandle.write(contentsOf: data)
             } else {
-                handle.write(data)
+              writeHandle.write(data)
             }
-        } else {
-            handle.seek(toFileOffset: UInt64(range.lowerBound))
-            handle.write(data)
+          } else {
+            writeHandle.seek(toFileOffset: UInt64(range.lowerBound))
+            writeHandle.write(data)
+          }
+
+          configuration.add(fragment: range)
         }
-        
-        configuration.add(fragment: range)
     }
     
     @discardableResult
     func synchronize(notify: Bool = true) throws -> Bool {
-        
-        lock.lock()
-        defer { lock.unlock() }
-        
-        guard let handle = writeHandle else { return false }
-        
-        if #available(iOS 13.0, *) {
-            try handle.synchronize()
-        } else {
-            handle.synchronizeFile()
-        }
-        
-        let configSyncResult = configuration.synchronize(to: paths.configurationFileURL(for: url))
+        try lock.sync {
+            guard let writeHandle else { return false }
 
-        if notify {
-            NotificationCenter.default.post(name: MediaFileHandle.didSynchronizeNotification,
-                                            object: nil,
-                                            userInfo: [MediaFileHandle.VideoURLKey: self.url])
+            if #available(iOS 13.0, *) {
+                try writeHandle.synchronize()
+            } else {
+                writeHandle.synchronizeFile()
+            }
+
+            let configSyncResult = configuration.synchronize(to: paths.configurationFileURL(for: url))
+
+            if notify {
+                NotificationCenter.default.post(name: MediaFileHandle.didSynchronizeNotification, object: nil, userInfo: [MediaFileHandle.VideoURLKey: self.url])
+            }
+
+            return configSyncResult
         }
-        
-        return configSyncResult
     }
     
     func close() throws {

@@ -11,9 +11,8 @@ import UIKit
 extension UIDevice {
     
     public var totalCapacity: Int? {
-        let fileURL = URL(fileURLWithPath: NSHomeDirectory())
         do {
-            let values = try fileURL.resourceValues(forKeys: [.volumeTotalCapacityKey])
+            let values = try homeDirectoryURL.resourceValues(forKeys: [.volumeTotalCapacityKey])
             return values.volumeTotalCapacity
         } catch {
             VLog(.info, error.localizedDescription)
@@ -22,9 +21,8 @@ extension UIDevice {
     }
     
     public var availableCapacity: Int? {
-        let fileURL = URL(fileURLWithPath: NSHomeDirectory())
         do {
-            let values = try fileURL.resourceValues(forKeys: [.volumeAvailableCapacityKey])
+            let values = try homeDirectoryURL.resourceValues(forKeys: [.volumeAvailableCapacityKey])
             return values.volumeAvailableCapacity
         } catch {
             VLog(.info, error.localizedDescription)
