@@ -10,24 +10,24 @@ import Foundation
 
 extension Data {
     
-    func checksum(split: MediaRangeBounds = Int64(1).KB, vacuate: MediaRangeBounds? = nil) -> Bool {
+    func checksum(split: Int64 = Int64(1).KB, vacuate: Int64? = nil) -> Bool {
         return (self as NSData).checksum(split: split)
     }
 }
 
 extension NSData {
     
-    func checksum(split: MediaRangeBounds, vacuate: MediaRangeBounds? = nil) -> Bool {
-        
+    func checksum(split: Int64, vacuate: Int64? = nil) -> Bool {
+
         if isEmpty {
             return false
         }
         
-        let totalRange = MediaRange(0, MediaRangeBounds(count))
-        
+        let totalRange = MediaRange(0, Int64(count))
+
         var splitRanges = totalRange.split(limit: split).filter { $0.isValid }
-        let vacuateCount: MediaRangeBounds = vacuate ?? MediaRangeBounds(sqrt(Double(splitRanges.count)))
-        
+        let vacuateCount: Int64 = vacuate ?? Int64(sqrt(Double(splitRanges.count)))
+
         let results: [MediaRange] = (0..<vacuateCount).compactMap { _ in
             let index = Int.random(in: splitRanges.indices)
             return splitRanges.remove(at: index)
@@ -43,8 +43,8 @@ extension NSData {
                 return false
             }
             
-            let sum: MediaRangeBounds = data.reduce(0) { $0 + MediaRangeBounds($1) }
-            
+            let sum: Int64 = data.reduce(0) { $0 + Int64($1) }
+
             VLog(.data, "sub-range: \(r) checksum: \(sum) --> \(sum < r.length ? "invalid" : "valid")")
             
             if sum < r.length {

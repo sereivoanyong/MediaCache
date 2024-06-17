@@ -10,14 +10,14 @@ import Foundation
 
 public enum MediaCacheFragment {
     
-    case prefix(MediaRangeBounds)
-    case suffix(MediaRangeBounds)
+    case prefix(Int64)
+    case suffix(Int64)
     case range(MediaRange)
 }
 
 extension MediaCacheFragment {
     
-    func ranges(for totalLength: MediaRangeBounds) -> MediaRange {
+    func ranges(for totalLength: Int64) -> MediaRange {
         switch self {
         case .prefix(let bounds):   return 0...bounds
         case .suffix(let bounds):   return max(0, totalLength - bounds)...totalLength

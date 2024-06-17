@@ -68,7 +68,7 @@ extension VideoResourceLoaderDelegate {
         let videoFileSize = videoAtt.fileSize()
         guard let maxRange = configuration.fragments.sorted(by: { $0.upperBound > $1.upperBound }).first else { return }
         if videoFileSize != maxRange.upperBound {
-            configuration.reset(fragment: MediaRange(0, MediaRangeBounds(videoFileSize)))
+            configuration.reset(fragment: MediaRange(0, Int64(videoFileSize)))
             configuration.synchronize(to: paths.configurationPath(for: url))
         }
     }
@@ -114,7 +114,7 @@ extension VideoResourceLoaderDelegate {
             return
         }
         
-        let length = MediaRangeBounds(videoFileSize)
+        let length = Int64(videoFileSize)
         
         configuration.reservedLength = length
         configuration.add(fragment: MediaRange(0, length))

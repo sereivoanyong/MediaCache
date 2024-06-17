@@ -8,15 +8,14 @@
 
 import Foundation
 
-public typealias MediaRangeBounds = Int64
-public typealias MediaRange = ClosedRange<MediaRangeBounds>
+public typealias MediaRange = ClosedRange<Int64>
 
 class CodingRange: NSObject, NSCoding {
     
-    var lowerBound: MediaRangeBounds
-    var upperBound: MediaRangeBounds
-    
-    init(lowerBound: MediaRangeBounds, upperBound: MediaRangeBounds) {
+    var lowerBound: Int64
+    var upperBound: Int64
+
+    init(lowerBound: Int64, upperBound: Int64) {
         self.lowerBound = lowerBound
         self.upperBound = upperBound
     }

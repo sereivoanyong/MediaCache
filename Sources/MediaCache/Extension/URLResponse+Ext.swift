@@ -28,7 +28,7 @@ extension URLResponse {
         return Int64(lengthValue) ?? Int64((lengthValue as NSString).integerValue)
     }
     
-    var contentRange: (MediaRange, MediaRangeBounds)? {
+    var contentRange: (MediaRange, Int64)? {
         
         guard let response = self as? HTTPURLResponse else { return nil }
         

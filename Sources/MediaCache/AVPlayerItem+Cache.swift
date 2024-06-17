@@ -15,7 +15,7 @@ extension AVPlayerItem {
     public convenience init(manager: MediaCacheManager = MediaCacheManager.default,
                             remote url: URL,
                             cacheKey key: MediaCacheKeyType? = nil,
-                            cacheFragments: [MediaCacheFragment] = [.prefix(MediaRangeBounds.max)]) {
+                            cacheFragments: [MediaCacheFragment] = [.prefix(.max)]) {
         
         let `key` = key ?? url.absoluteString.mediaCacheMD5
         

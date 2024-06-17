@@ -14,8 +14,8 @@ protocol MediaConfigurationType: NSObjectProtocol {
     
     var contentInfo: ContentInfo { get set }
     
-    var reservedLength: MediaRangeBounds { get set }
-    
+    var reservedLength: Int64 { get set }
+
     var fragments: [MediaRange] { get }
     
     func overlaps(_ other: MediaRange) -> [MediaRange]
@@ -34,7 +34,7 @@ class MediaConfiguration: NSObject, NSCoding {
     
     var contentInfo: ContentInfo = ContentInfo(totalLength: 0)
     
-    var reservedLength: MediaRangeBounds = 0
+    var reservedLength: Int64 = 0
     
     var fragments: [MediaRange] = []
     
