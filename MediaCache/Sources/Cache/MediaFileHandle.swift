@@ -125,8 +125,18 @@ extension MediaFileHandle: MediaFileHandleType {
         lock.lock()
         defer { lock.unlock() }
         
-        try readHandle?.throwError_seek(toFileOffset: UInt64(range.lowerBound))
-        let data = try readHandle?.throwError_readData(ofLength: UInt(range.length)) ?? Data()
+        let data: Data
+        if #available(iOS 13.0, *) {
+            try readHandle?.seek(toOffset: UInt64(range.lowerBound))
+            if #available(iOS 13.4, *) {
+                data = try readHandle?.read(upToCount: Int(range.length)) ?? Data()
+            } else {
+                data = readHandle?.readData(ofLength: Int(range.length)) ?? Data()
+            }
+        } else {
+            readHandle?.seek(toFileOffset: UInt64(range.lowerBound))
+            data = readHandle?.readData(ofLength: Int(range.length)) ?? Data()
+        }
         return data
     }
     
@@ -145,8 +155,17 @@ extension MediaFileHandle: MediaFileHandleType {
         
         VLog(.data, "write data: \(data), for: \(range)")
         
-        try handle.throwError_seek(toFileOffset: UInt64(range.lowerBound))
-        try handle.throwError_write(data)
+        if #available(iOS 13.0, *) {
+            try handle.seek(toOffset: UInt64(range.lowerBound))
+            if #available(iOS 13.4, *) {
+                try handle.write(contentsOf: data)
+            } else {
+                handle.write(data)
+            }
+        } else {
+            handle.seek(toFileOffset: UInt64(range.lowerBound))
+            handle.write(data)
+        }
         
         configuration.add(fragment: range)
     }
@@ -159,7 +178,11 @@ extension MediaFileHandle: MediaFileHandleType {
         
         guard let handle = writeHandle else { return false }
         
-        try handle.throwError_synchronizeFile()
+        if #available(iOS 13.0, *) {
+            try handle.synchronize()
+        } else {
+            handle.synchronizeFile()
+        }
         
         let configSyncResult = configuration.synchronize(to: paths.configurationPath(for: url))
         
@@ -173,8 +196,13 @@ extension MediaFileHandle: MediaFileHandleType {
     }
     
     func close() throws {
-        try readHandle?.throwError_closeFile()
-        try writeHandle?.throwError_closeFile()
+        if #available(iOS 13.4, *) {
+            try readHandle?.close()
+            try writeHandle?.close()
+        } else {
+            readHandle?.closeFile()
+            writeHandle?.closeFile()
+        }
     }
 }
 

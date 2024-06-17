@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9C084210222530D700EB8F85 /* MediaCache.h in Headers */ = {isa = PBXBuildFile; fileRef = 9C08420E222530D700EB8F85 /* MediaCache.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9C0842962226324200EB8F85 /* AVPlayerItem+Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0842802226324200EB8F85 /* AVPlayerItem+Cache.swift */; };
 		9C0842972226324200EB8F85 /* URLResponse+Ext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0842822226324200EB8F85 /* URLResponse+Ext.swift */; };
 		9C0842982226324200EB8F85 /* Error+Ext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0842832226324200EB8F85 /* Error+Ext.swift */; };
@@ -31,9 +30,6 @@
 		9C4273BB23A3737700944EAD /* MediaCacheFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C4273BA23A3737700944EAD /* MediaCacheFragment.swift */; };
 		9C6CB72B239F947D009EB012 /* Data+Checksum.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6CB72A239F947D009EB012 /* Data+Checksum.swift */; };
 		9C75008C223B88F70024D1E8 /* CodingRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C75008B223B88F70024D1E8 /* CodingRange.swift */; };
-		9C869B1E23274FC50096B72C /* FileHandle+Exception.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C869B1D23274FC50096B72C /* FileHandle+Exception.swift */; };
-		9C869B21232753D80096B72C /* NSFileHandle+Ext.h in Headers */ = {isa = PBXBuildFile; fileRef = 9C869B1F232753D80096B72C /* NSFileHandle+Ext.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		9C869B22232753D80096B72C /* NSFileHandle+Ext.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C869B20232753D80096B72C /* NSFileHandle+Ext.m */; };
 		9CB878CF22268DBB00543226 /* MediaLRUConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB878CE22268DBB00543226 /* MediaLRUConfiguration.swift */; };
 		9CD29EFF223A43EE009F70EB /* Int64+FileSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD29EFE223A43EE009F70EB /* Int64+FileSize.swift */; };
 		9CDA51B9229E86CC00714A14 /* UIDevice+Capacity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDA51B8229E86CC00714A14 /* UIDevice+Capacity.swift */; };
@@ -41,7 +37,6 @@
 
 /* Begin PBXFileReference section */
 		9C08420B222530D700EB8F85 /* MediaCache.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MediaCache.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		9C08420E222530D700EB8F85 /* MediaCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MediaCache.h; sourceTree = "<group>"; };
 		9C08420F222530D700EB8F85 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9C0842802226324200EB8F85 /* AVPlayerItem+Cache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "AVPlayerItem+Cache.swift"; sourceTree = "<group>"; };
 		9C0842822226324200EB8F85 /* URLResponse+Ext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "URLResponse+Ext.swift"; sourceTree = "<group>"; };
@@ -66,9 +61,6 @@
 		9C4273BA23A3737700944EAD /* MediaCacheFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCacheFragment.swift; sourceTree = "<group>"; };
 		9C6CB72A239F947D009EB012 /* Data+Checksum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Checksum.swift"; sourceTree = "<group>"; };
 		9C75008B223B88F70024D1E8 /* CodingRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodingRange.swift; sourceTree = "<group>"; };
-		9C869B1D23274FC50096B72C /* FileHandle+Exception.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileHandle+Exception.swift"; sourceTree = "<group>"; };
-		9C869B1F232753D80096B72C /* NSFileHandle+Ext.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSFileHandle+Ext.h"; sourceTree = "<group>"; };
-		9C869B20232753D80096B72C /* NSFileHandle+Ext.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSFileHandle+Ext.m"; sourceTree = "<group>"; };
 		9CB878CE22268DBB00543226 /* MediaLRUConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaLRUConfiguration.swift; sourceTree = "<group>"; };
 		9CD29EFE223A43EE009F70EB /* Int64+FileSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int64+FileSize.swift"; sourceTree = "<group>"; };
 		9CDA51B8229E86CC00714A14 /* UIDevice+Capacity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIDevice+Capacity.swift"; sourceTree = "<group>"; };
@@ -104,7 +96,6 @@
 		9C08420D222530D700EB8F85 /* MediaCache */ = {
 			isa = PBXGroup;
 			children = (
-				9C08420E222530D700EB8F85 /* MediaCache.h */,
 				9C0842802226324200EB8F85 /* AVPlayerItem+Cache.swift */,
 				9C08420F222530D700EB8F85 /* Info.plist */,
 				9C08427F2226324200EB8F85 /* Sources */,
@@ -138,9 +129,6 @@
 				9C0842832226324200EB8F85 /* Error+Ext.swift */,
 				9CD29EFE223A43EE009F70EB /* Int64+FileSize.swift */,
 				9CDA51B8229E86CC00714A14 /* UIDevice+Capacity.swift */,
-				9C869B1D23274FC50096B72C /* FileHandle+Exception.swift */,
-				9C869B1F232753D80096B72C /* NSFileHandle+Ext.h */,
-				9C869B20232753D80096B72C /* NSFileHandle+Ext.m */,
 			);
 			path = Extension;
 			sourceTree = "<group>";
@@ -194,8 +182,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C869B21232753D80096B72C /* NSFileHandle+Ext.h in Headers */,
-				9C084210222530D700EB8F85 /* MediaCache.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -286,14 +272,12 @@
 				9C0842A22226324200EB8F85 /* MediaDownloader.swift in Sources */,
 				9C08429F2226324200EB8F85 /* MediaCacheManager.swift in Sources */,
 				9C304CE3238CE5B100145942 /* MediaCachePaths.swift in Sources */,
-				9C869B22232753D80096B72C /* NSFileHandle+Ext.m in Sources */,
 				9C0842962226324200EB8F85 /* AVPlayerItem+Cache.swift in Sources */,
 				9CD29EFF223A43EE009F70EB /* Int64+FileSize.swift in Sources */,
 				9C75008C223B88F70024D1E8 /* CodingRange.swift in Sources */,
 				9C08429E2226324200EB8F85 /* URL+Ext.swift in Sources */,
 				9C4273BB23A3737700944EAD /* MediaCacheFragment.swift in Sources */,
 				9C0842992226324200EB8F85 /* Range+Ext.swift in Sources */,
-				9C869B1E23274FC50096B72C /* FileHandle+Exception.swift in Sources */,
 				9C0842A32226324200EB8F85 /* ResourceLoaderDelegate.swift in Sources */,
 				9C0842A42226324200EB8F85 /* MediaLoader.swift in Sources */,
 				9CB878CF22268DBB00543226 /* MediaLRUConfiguration.swift in Sources */,
@@ -355,7 +339,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -413,7 +397,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;

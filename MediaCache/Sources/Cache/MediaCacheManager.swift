@@ -215,9 +215,15 @@ extension MediaCacheManager {
         
         do {
             try FileM.removeItem(atPath: configPath)
-            try fileHandle.throwError_truncateFile(atOffset: UInt64(reservedLength))
-            try fileHandle.throwError_synchronizeFile()
-            try fileHandle.throwError_closeFile()
+            if #available(iOS 13.0, *) {
+                try fileHandle.truncate(atOffset: UInt64(reservedLength))
+                try fileHandle.synchronize()
+                try fileHandle.close()
+            } else {
+                fileHandle.truncateFile(atOffset: UInt64(reservedLength))
+                fileHandle.synchronizeFile()
+                fileHandle.closeFile()
+            }
         } catch {
             try cleanAllClosure()
         }
