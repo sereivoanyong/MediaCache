@@ -7,21 +7,23 @@
 //
 
 import Foundation
+import CryptoKit
 import CommonCrypto
 
 extension String {
-    
-    var mediaCacheMD5: String {
-        let str = cString(using: String.Encoding.utf8) ?? []
-        let strLen = CUnsignedInt(lengthOfBytes(using: String.Encoding.utf8))
-        let digestLen = Int(CC_MD5_DIGEST_LENGTH)
-        let result = UnsafeMutablePointer<CUnsignedChar>.allocate(capacity: digestLen)
-        CC_MD5(str, strLen, result)
-        let hash = NSMutableString()
-        for i in (0..<digestLen) {
-            hash.appendFormat("%02x", result[i])
+
+    var md5: String {
+        let data = Data(utf8)
+        let hashData: any Sequence<UInt8>
+        if #available(iOS 13.0, *) {
+            hashData = Insecure.MD5.hash(data: data)
+        } else {
+            hashData = data.withUnsafeBytes { bytes -> [UInt8] in
+                var hash = [UInt8](repeating: 0, count: Int(CC_MD5_DIGEST_LENGTH))
+                CC_MD5(bytes.baseAddress, CC_LONG(data.count), &hash)
+                return hash
+            }
         }
-        defer { result.deallocate() }
-        return String(format: hash as String)
+        return hashData.map { String(format: "%02x", $0) }.joined()
     }
 }

@@ -10,7 +10,7 @@ import Foundation
 
 final class MediaConfiguration: CustomStringConvertible {
 
-    let url: MediaURL
+    let resource: MediaResource
 
     var contentInfo: ContentInfo
 
@@ -18,17 +18,17 @@ final class MediaConfiguration: CustomStringConvertible {
 
     var fragments: [MediaRange] = []
 
-    var lastTimeInterval: Date = Date()
+    var playedAt: Date = Date()
 
-    init(url: MediaURL) {
-        self.url = MediaURL(cacheKey: url.cacheKey, url: url.url)
+    init(resource: MediaResource) {
+        self.resource = resource
         self.contentInfo = ContentInfo(contentType: nil, contentLength: 0, isByteRangeAccessSupported: false)
     }
     
     private let lock = NSLock()
     
     var description: String {
-        return ["url": url, "contentInfo": contentInfo, "reservedLength": reservedLength, "lastTimeInterval": lastTimeInterval, "fragments": fragments].description
+        return ["resource": resource, "contentInfo": contentInfo, "reservedLength": reservedLength, "playedAt": playedAt, "fragments": fragments].description
     }
 }
 
@@ -36,10 +36,10 @@ extension MediaConfiguration: Codable {
 
     private enum CodingKeys: String, CodingKey {
 
-        case url
+        case resource
         case contentInfo
         case reservedLength
-        case lastTimeInterval
+        case playedAt
         case fragments
     }
 }
@@ -49,7 +49,7 @@ extension MediaConfiguration {
     @discardableResult
     func synchronize(to fileURL: URL) -> Bool {
         lock.sync {
-            lastTimeInterval = Date()
+            playedAt = Date()
             do {
               let encoder = JSONEncoder()
               encoder.dateEncodingStrategy = .iso8601

@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 
 struct ContentInfo {
 
-    var contentType: String?
+    let contentType: String?
     let contentLength: Int
     let isByteRangeAccessSupported: Bool
 }
@@ -20,20 +20,20 @@ struct ContentInfo {
 extension ContentInfo {
 
     init(response: HTTPURLResponse) {
-      let allHeaderFields = response.allHeaderFields
-      // content-type field cannot be used.
-      // See: https://stackoverflow.com/a/60298272/11235826
-      if let mimeType = response.mimeType {
-        if #available(iOS 14.0, *) {
-            self.contentType = UTType(mimeType: mimeType)?.identifier
+        let allHeaderFields = response.allHeaderFields
+        // content-type field cannot be used.
+        // See: https://stackoverflow.com/a/60298272/11235826
+        if let mimeType = response.mimeType {
+            if #available(iOS 14.0, *) {
+                self.contentType = UTType(mimeType: mimeType)?.identifier
+            } else {
+                self.contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, mimeType as CFString, nil)?.takeRetainedValue() as String?
+            }
         } else {
-            self.contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, mimeType as CFString, nil)?.takeRetainedValue() as String?
+            self.contentType = nil
         }
-      } else {
-          self.contentType = nil
-      }
-      self.contentLength = value(forHTTPHeaderField: "content-range", in: allHeaderFields)?.split(separator: "/").last.flatMap { Int($0) } ?? 0
-      self.isByteRangeAccessSupported = value(forHTTPHeaderField: "accept-ranges", in: allHeaderFields)?.contains("bytes") ?? false
+        self.contentLength = value(forHTTPHeaderField: "content-range", in: allHeaderFields)?.split(separator: "/").last.flatMap { Int($0) } ?? 0
+        self.isByteRangeAccessSupported = value(forHTTPHeaderField: "accept-ranges", in: allHeaderFields)?.contains("bytes") ?? false
     }
 }
 

@@ -30,17 +30,17 @@ private let logQueue = DispatchQueue(label: "com.video.cache.log.queue")
 func VLog(file: String = #file, line: Int = #line, fun: String = #function, _ level: MediaCacheLogLevel, _ message: Any) {
     guard level.rawValue <= mediaCacheLogLevel.rawValue else { return }
     logQueue.async {
-        Swift.print("[Video Cache] [\(level.description)] file: \(file.components(separatedBy: "/").last ?? "none"), line: \(line), func: \(fun): \(message)")
+        print("[Video Cache] [\(level.description)] file: \(file.components(separatedBy: "/").last ?? "none"), line: \(line), func: \(fun): \(message)")
     }
 }
 
 extension NSLocking {
 
-  @inlinable
-  func sync<Result>(_ body: () throws -> Result) rethrows -> Result {
-    lock()
-    let result = try body()
-    unlock()
-    return result
-  }
+    @inlinable
+    func sync<Result>(_ body: () throws -> Result) rethrows -> Result {
+        lock()
+        let result = try body()
+        unlock()
+        return result
+    }
 }

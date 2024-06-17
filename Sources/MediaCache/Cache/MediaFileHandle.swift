@@ -13,22 +13,22 @@ let PacketLimit: Int = 1024 * 1024 // 1 MB
 
 final class MediaFileHandle {
 
-    let url: MediaURL
+    let resource: MediaResource
     
     let paths: MediaCachePaths
     
-    let cacheFragments: [MediaCacheFragment]
-    
+    let cacheFragments: [MediaFragment]
+
     let fileURL: URL
 
     let configuration: MediaConfiguration
     
-    init(paths: MediaCachePaths, url: MediaURL, cacheFragments: [MediaCacheFragment]) {
+    init(paths: MediaCachePaths, resource: MediaResource, cacheFragments: [MediaFragment]) {
         self.paths = paths
-        self.url = url
+        self.resource = resource
         self.cacheFragments = cacheFragments
         
-        fileURL = paths.videoFileURL(for: url)
+        fileURL = paths.videoFileURL(for: resource)
 
         VLog(.info, "Video path: \(fileURL)")
         
@@ -36,19 +36,19 @@ final class MediaFileHandle {
             FileM.createFile(atPath: fileURL.path, contents: nil, attributes: nil)
         }
         
-        configuration = paths.configuration(for: url)
-        
+        configuration = paths.configuration(for: resource)
+
         NotificationCenter.default.addObserver(self, selector: #selector(applicationDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
     }
 
     deinit {
-      do {
-          try synchronize(notify: false)
-          try close()
-      } catch {
-          VLog(.error, "fileHandle synchronize and close failure: \(error)")
-      }
-      NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
+        do {
+            try synchronize(notify: false)
+            try close()
+        } catch {
+            VLog(.error, "fileHandle synchronize and close failure: \(error)")
+        }
+        NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
     }
 
     private lazy var readHandle = try? FileHandle(forReadingFrom: fileURL)
@@ -76,7 +76,7 @@ extension MediaFileHandle {
         get { return configuration.contentInfo }
         set {
             configuration.contentInfo = newValue
-            configuration.synchronize(to: paths.configurationFileURL(for: url))
+            configuration.synchronize(to: paths.configurationFileURL(for: resource))
         }
     }
     
@@ -159,10 +159,10 @@ extension MediaFileHandle {
                 writeHandle.synchronizeFile()
             }
 
-            let configSyncResult = configuration.synchronize(to: paths.configurationFileURL(for: url))
+            let configSyncResult = configuration.synchronize(to: paths.configurationFileURL(for: resource))
 
             if notify {
-                NotificationCenter.default.post(name: MediaFileHandle.didSynchronizeNotification, object: nil, userInfo: [MediaFileHandle.VideoURLKey: self.url])
+                NotificationCenter.default.post(name: MediaFileHandle.didSynchronizeNotification, object: nil, userInfo: [MediaFileHandle.VideoURLKey: self.resource])
             }
 
             return configSyncResult
@@ -182,8 +182,7 @@ extension MediaFileHandle {
 
 extension MediaFileHandle {
     
-    @objc
-    func applicationDidEnterBackground() {
+    @objc func applicationDidEnterBackground() {
         guard isWriting else { return }
         do {
             try synchronize()

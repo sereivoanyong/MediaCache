@@ -10,28 +10,36 @@ import AVFoundation
 import ObjectiveC.runtime
 
 extension AVPlayerItem {
-    
-    /// if cache key is nil, it will be filled by url.absoluteString's md5 string
-    public convenience init(manager: MediaCacheManager = MediaCacheManager.default,
-                            remote url: URL,
-                            cacheKey: MediaCacheKey? = nil,
-                            cacheFragments: [MediaCacheFragment] = [.prefix(.max)]) {
-        
-        let cacheKey = cacheKey ?? url.absoluteString.mediaCacheMD5
 
-        let videoUrl = MediaURL(cacheKey: cacheKey, url: url)
-        manager.visit(url: videoUrl)
+    private static var loaderDelegateKey: Void?
+    var resourceLoaderDelegate: MediaResourceLoaderDelegate? {
+        get { return objc_getAssociatedObject(self, &Self.loaderDelegateKey) as? MediaResourceLoaderDelegate }
+        set { objc_setAssociatedObject(self, &Self.loaderDelegateKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)}
+    }
+}
+
+extension NSObjectProtocol where Self: AVPlayerItem {
+
+    /// if cache key is nil, it will be filled by url.absoluteString's md5 string
+    public static func caching(
+        manager: MediaCacheManager = MediaCacheManager.default,
+        url: URL,
+        cacheKey: MediaCacheKey? = nil,
+        cacheFragments: [MediaFragment] = [.prefix(.max)]
+    ) -> Self {
+        let cacheKey = cacheKey ?? url.absoluteString.md5
+
+        let resource = MediaResource(cacheKey: cacheKey, url: url)
+        manager.visit(resource)
         
-        let loaderDelegate = VideoResourceLoaderDelegate(manager: manager,
-                                                         url: videoUrl,
-                                                         cacheFragments: cacheFragments)
-        let urlAsset = AVURLAsset(url: loaderDelegate.url.includeMediaCacheSchemeUrl, options: nil)
-        urlAsset.resourceLoader.setDelegate(loaderDelegate, queue: .main)
+        let resourceLoaderDelegate = MediaResourceLoaderDelegate(manager: manager, resource: resource, cacheFragments: cacheFragments)
+        let urlAsset = AVURLAsset(url: resourceLoaderDelegate.resource.includeMediaCacheSchemeUrl, options: nil)
+        urlAsset.resourceLoader.setDelegate(resourceLoaderDelegate, queue: .main)
         
-        self.init(asset: urlAsset)
-        canUseNetworkResourcesForLiveStreamingWhilePaused = true
-        
-        resourceLoaderDelegate = loaderDelegate
+        let playerItem = Self.init(asset: urlAsset)
+        playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
+        playerItem.resourceLoaderDelegate = resourceLoaderDelegate
+        return playerItem
     }
     
     public func cacheCancel() {

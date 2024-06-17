@@ -21,20 +21,16 @@ struct MediaCachePaths {
 
 extension MediaCachePaths {
     
-    func cacheFileNamePrefix(for url: MediaURL) -> String {
-        return convertion?(url.cacheKey) ?? url.cacheKey
-    }
-    
     func cacheFileNamePrefix(for cacheKey: MediaCacheKey) -> String {
         return convertion?(cacheKey) ?? cacheKey
     }
     
-    func cacheFileName(for url: MediaURL) -> String {
-        return cacheFileNamePrefix(for: url).appending(".\(url.url.pathExtension)")
+    func cacheFileName(for resource: MediaResource) -> String {
+        return cacheFileNamePrefix(for: resource.cacheKey).appending(".\(resource.url.pathExtension)")
     }
     
-    func configFileName(for url: MediaURL) -> String {
-        return cacheFileName(for: url).appending(".\(MediaCacheConfigFileExt)")
+    func configFileName(for resource: MediaResource) -> String {
+        return cacheFileName(for: resource).appending(".\(MediaCacheConfigFileExt)")
     }
 }
 
@@ -44,20 +40,20 @@ extension MediaCachePaths {
         return directoryURL.appendingPathComponent("lru.\(MediaCacheConfigFileExt)")
     }
     
-    func videoFileURL(for url: MediaURL) -> URL {
-        return directoryURL.appendingPathComponent(cacheFileName(for: url))
+    func videoFileURL(for resource: MediaResource) -> URL {
+        return directoryURL.appendingPathComponent(cacheFileName(for: resource))
     }
     
-    func configurationFileURL(for url: MediaURL) -> URL {
-        return directoryURL.appendingPathComponent(configFileName(for: url))
+    func configurationFileURL(for resource: MediaResource) -> URL {
+        return directoryURL.appendingPathComponent(configFileName(for: resource))
     }
     
     public func cachedUrl(for cacheKey: MediaCacheKey) -> URL? {
-        return configuration(for: cacheKey)?.url.includeMediaCacheSchemeUrl
+        return configuration(for: cacheKey)?.resource.includeMediaCacheSchemeUrl
     }
     
-    func configuration(for url: MediaURL) -> MediaConfiguration {
-        let configurationFileURL = configurationFileURL(for: url)
+    func configuration(for resource: MediaResource) -> MediaConfiguration {
+        let configurationFileURL = configurationFileURL(for: resource)
         if let data = try? Data(contentsOf: configurationFileURL) {
             do {
                 let decoder = JSONDecoder()
@@ -68,7 +64,7 @@ extension MediaCachePaths {
                 print(error)
             }
         }
-        let newConfig = MediaConfiguration(url: url)
+        let newConfig = MediaConfiguration(resource: resource)
         newConfig.synchronize(to: configurationFileURL)
         return newConfig
     }

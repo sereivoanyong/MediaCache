@@ -29,14 +29,16 @@ let FileM = FileManager.default
 final public class MediaCacheManager {
 
     /// shared instance, directory default NSTemporaryDirectory/MediaCache
-    public static let `default` = MediaCacheManager(directoryURL: temporaryDirectoryURL.appendingPathComponent("sy/MediaCache"))
+    public static let `default` = MediaCacheManager(directoryURL: temporaryDirectoryURL.appendingPathComponent("SYMediaCache"))
 
-    /// default NSTemporaryDirectory/sy/MediaCache/
+    /// default NSTemporaryDirectory/SYMediaCache/
     public let directoryURL: URL
 
     /// default 1GB
     public var capacityLimit: Int = 1024 * 1024 * 1024 {
-        didSet { checkAllow() }
+        didSet {
+            checkAllow()
+        }
     }
     
     /// default nil, fileName is original value
@@ -67,11 +69,6 @@ final public class MediaCacheManager {
         set { mediaCacheLogLevel = newValue }
     }
     
-    deinit {
-        NotificationCenter.default.removeObserver(self, name: MediaFileHandle.didSynchronizeNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
-    }
-    
     public init(directoryURL: URL) {
         self.directoryURL = directoryURL
         
@@ -82,7 +79,12 @@ final public class MediaCacheManager {
         NotificationCenter.default.addObserver(self, selector: #selector(autoCheckUsage), name: MediaFileHandle.didSynchronizeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
-    
+
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: MediaFileHandle.didSynchronizeNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
+    }
+
     lazy public private(set) var lru: MediaLRUConfiguration = {
         let fileURL = paths.lruFileURL()
         if let lruConfig = MediaLRUConfiguration.read(from: fileURL) {
@@ -96,8 +98,8 @@ final public class MediaCacheManager {
     
     private var lastCheckTimeInterval: TimeInterval = Date().timeIntervalSince1970
     
-    private var _downloadingURLs: [MediaCacheKey: MediaURL] = [:]
-    
+    private var _downloadingURLs: [MediaCacheKey: MediaResource] = [:]
+
     private let lock = NSLock()
     
     private var reserveRequired = true
@@ -161,24 +163,23 @@ extension MediaCacheManager {
     }
     
     /// if cache key is nil, it will be filled by url.absoluteString's md5 string
-    public func clean(url: MediaURL, reserve: Bool = true) throws {
+    public func clean(_ resource: MediaResource, reserve: Bool = true) throws {
+        VLog(.info, "clean: \(resource)")
         
-        VLog(.info, "clean: \(url)")
-        
-        if let _ = downloadingURLs[url.cacheKey] {
-            throw MediaCacheErrors.fileHandleWriting.error
+        if let _ = downloadingResources[resource.cacheKey] {
+            throw MediaCacheError.fileHandleWriting
         }
         
-        let configFileURL = paths.configurationFileURL(for: url)
-        let videoFileURL = paths.videoFileURL(for: url)
+        let configFileURL = paths.configurationFileURL(for: resource)
+        let videoFileURL = paths.videoFileURL(for: resource)
 
         let cleanAllClosure = { [weak self] in
             try FileM.removeItem(atPath: configFileURL.path)
             try FileM.removeItem(atPath: videoFileURL.path)
-            self?.lru.delete(url: url)
+            self?.lru.delete(resource)
         }
         
-        guard let config = paths.configuration(for: url.cacheKey) else {
+        guard let config = paths.configuration(for: resource.cacheKey) else {
             try cleanAllClosure()
             return
         }
@@ -222,37 +223,36 @@ extension MediaCacheManager {
     
     /// clean all cache
     public func cleanAll() throws {
-        
         reserveRequired = true
         
-        let urls = downloadingURLs
-        
-        guard urls.count > 0 else {
+        let resources = downloadingResources
+
+        guard resources.count > 0 else {
             try FileM.removeItem(at: directoryURL)
             createCacheDirectory()
             return
         }
         
-        lru.deleteAll(without: urls)
+        lru.deleteAll(without: resources)
         
-        var downloadingURLs: [MediaCacheKey: MediaURL] = [:]
-        urls.forEach {
-            downloadingURLs[paths.cacheFileName(for: $0.value)] = $0.value
-            downloadingURLs[paths.configFileName(for: $0.value)] = $0.value
+        var downloadingResourcesByFileName: [String: MediaResource] = [:]
+        for resource in resources.values {
+            downloadingResourcesByFileName[paths.cacheFileName(for: resource)] = resource
+            downloadingResourcesByFileName[paths.configFileName(for: resource)] = resource
         }
         
-        let contentURLs = try FileM.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil, options: []).filter { downloadingURLs[$0.path] == nil }
+        let fileURLs = try FileM.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil, options: []).filter { downloadingResourcesByFileName[$0.lastPathComponent] == nil }
 
-        for contentURL in contentURLs {
-            try FileM.removeItem(atPath: contentURL.path)
+        for fileURL in fileURLs {
+            try FileM.removeItem(atPath: fileURL.path)
         }
     }
 }
 
 extension MediaCacheManager {
     
-    func visit(url: MediaURL) {
-        lru.visit(url: url)
+    func visit(_ resource: MediaResource) {
+        lru.visit(resource)
     }
     
     func checkUsage() {
@@ -263,12 +263,12 @@ extension MediaCacheManager {
         
         guard size > capacityLimit else { return }
         
-        let oldestUrls = lru.oldestURL(maxLength: 4, without: downloadingURLs)
+        let oldestResources = lru.oldestResources(maxLength: 4, without: downloadingResources)
         
-        guard oldestUrls.count > 0 else { return }
+        guard oldestResources.count > 0 else { return }
         
-        oldestUrls.forEach { try? clean(url: $0, reserve: reserveRequired) }
-        
+        oldestResources.forEach { try? clean($0, reserve: reserveRequired) }
+
 //        reserveRequired.toggle()
     }
 }
@@ -282,15 +282,15 @@ extension MediaCacheManager {
 
 extension MediaCacheManager {
     
-    func addDownloading(url: MediaURL) {
-        downloadingURLs[url.cacheKey] = url
+    func addDownloading(_ resource: MediaResource) {
+        downloadingResources[resource.cacheKey] = resource
     }
     
-    func removeDownloading(url: MediaURL) {
-        downloadingURLs.removeValue(forKey: url.cacheKey)
+    func removeDownloading(_ resource: MediaResource) {
+        downloadingResources.removeValue(forKey: resource.cacheKey)
     }
     
-    public var downloadingURLs: [MediaCacheKey: MediaURL] {
+    public var downloadingResources: [MediaCacheKey: MediaResource] {
         get {
             lock.sync {
                 return _downloadingURLs

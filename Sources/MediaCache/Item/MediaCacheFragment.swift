@@ -1,5 +1,5 @@
 //
-//  MediaCacheFragment.swift
+//  MediaFragment.swift
 //  MediaCache
 //
 //  Created by SoalHuang on 2019/12/13.
@@ -8,20 +8,23 @@
 
 import Foundation
 
-public enum MediaCacheFragment {
+public enum MediaFragment {
     
     case prefix(Int)
     case suffix(Int)
     case range(MediaRange)
 }
 
-extension MediaCacheFragment {
+extension MediaFragment {
     
     func ranges(for totalLength: Int) -> MediaRange {
         switch self {
-        case .prefix(let bounds):   return 0...bounds
-        case .suffix(let bounds):   return max(0, totalLength - bounds)...totalLength
-        case .range(let range):     return range
+        case .prefix(let bounds):  
+            return 0...bounds
+        case .suffix(let bounds):   
+            return max(0, totalLength - bounds)...totalLength
+        case .range(let range):     
+            return range
         }
     }
 }

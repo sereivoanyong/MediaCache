@@ -20,7 +20,7 @@ extension MediaLoader {
         let downloader = MediaDownloader(
             paths: paths,
             session: session,
-            url: url,
+            resource: resource,
             loadingRequest: loadingRequest,
             fileHandle: fileHandle,
             useChecksum: useChecksum
@@ -78,34 +78,25 @@ final class MediaLoader: NSObject {
     weak var delegate: MediaLoaderDelegate?
     
     let paths: MediaCachePaths
-    let url: MediaURL
-    let cacheFragments: [MediaCacheFragment]
+    let resource: MediaResource
+    let cacheFragments: [MediaFragment]
     let useChecksum: Bool
     
     var session: URLSession?
     
-    deinit {
-        VLog(.info, "VideoLoader deinit\n")
-        cancel()
-        session?.invalidateAndCancel()
-        session = nil
-    }
-    
     init(
         paths: MediaCachePaths,
-        url: MediaURL,
-        cacheFragments: [MediaCacheFragment],
+        resource: MediaResource,
+        cacheFragments: [MediaFragment],
         allowsCellularAccess: Bool,
         useChecksum: Bool,
         delegate: MediaLoaderDelegate?
     ) {
-
         self.paths = paths
-        self.url = url
+        self.resource = resource
         self.cacheFragments = cacheFragments
         self.useChecksum = useChecksum
         self.delegate = delegate
-        
         super.init()
         
         let configuration = URLSessionConfiguration.default
@@ -117,7 +108,14 @@ final class MediaLoader: NSObject {
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: DownloadQueue.shared.queue)
     }
     
-    lazy private var fileHandle: MediaFileHandle = MediaFileHandle(paths: paths, url: url, cacheFragments: cacheFragments)
+    deinit {
+        VLog(.info, "VideoLoader deinit\n")
+        cancel()
+        session?.invalidateAndCancel()
+        session = nil
+    }
+
+    lazy private var fileHandle: MediaFileHandle = MediaFileHandle(paths: paths, resource: resource, cacheFragments: cacheFragments)
 
     private var _downloaders: [MediaDownloader] = []
     private let lock = NSLock()

@@ -1,5 +1,5 @@
 //
-//  Error+Ext.swift
+//  MediaCacheError.swift
 //  MediaCache
 //
 //  Created by SoalHuang on 2019/2/26.
@@ -8,21 +8,18 @@
 
 import Foundation
 
-let error_domain = "com.video.cache.domain"
+enum MediaCacheError: LocalizedError, CustomNSError {
 
-enum MediaCacheErrors {
-    
+    static let errorDomain: String = "com.video.cache.domain"
+
     case badUrl
     case dataRequestNull
     case notMedia
     
     case fileHandleWriting
     case cancelled
-}
-
-extension MediaCacheErrors {
     
-    var code: Int {
+    var errorCode: Int {
         switch self {
         case .badUrl:               return NSURLErrorBadURL
         case .dataRequestNull:      return NSURLErrorUnknown
@@ -32,7 +29,7 @@ extension MediaCacheErrors {
         }
     }
     
-    var message: String {
+    var errorDescription: String? {
         switch self {
         case .badUrl:               return "bad url"
         case .dataRequestNull:      return "data request is null"
@@ -40,18 +37,5 @@ extension MediaCacheErrors {
         case .fileHandleWriting:    return "file handle writing"
         case .cancelled:            return "cancelled"
         }
-    }
-}
-
-extension MediaCacheErrors {
-    
-    var error: Error {
-        return NSError(domain: error_domain, code: code, userInfo: [NSURLErrorFailingURLErrorKey : message])
-    }
-    
-    func error(_ msg: String? = nil) -> Error {
-        guard let `msg` = msg else { return error }
-        return NSError(domain: error_domain, code: code, userInfo: [NSURLErrorFailingURLErrorKey : message,
-                                                                    NSLocalizedDescriptionKey: msg])
     }
 }

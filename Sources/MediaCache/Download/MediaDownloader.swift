@@ -27,7 +27,7 @@ extension MediaDownloader {
         NSObject.cancelPreviousPerformRequests(withTarget: self)
         delegate = nil
         if !loadingRequest.isFinished {
-            loadingRequest.finishLoading(with: MediaCacheErrors.cancelled.error)
+            loadingRequest.finishLoading(with: MediaCacheError.cancelled)
         }
         dataDelegate?.delegate = nil
         if task?.state ~= .running || task?.state ~= .suspended {
@@ -49,14 +49,14 @@ extension MediaDownloader {
     func execute() {
         
         guard let dataRequest = loadingRequest.dataRequest else {
-            finishLoading(error: MediaCacheErrors.dataRequestNull.error)
+            finishLoading(error: MediaCacheError.dataRequestNull)
             return
         }
         
         loadingRequest.contentInformationRequest?.update(contentInfo: fileHandle.contentInfo)
         
         if fileHandle.configuration.contentInfo.contentLength > 0 {
-            fileHandle.configuration.synchronize(to: paths.configurationFileURL(for: url))
+            fileHandle.configuration.synchronize(to: paths.configurationFileURL(for: resource))
         }
         //        else if dataRequest.requestsAllDataToEndOfResource {
         //            toEnd = true
@@ -90,35 +90,37 @@ final class MediaDownloader: NSObject {
     
     let paths: MediaCachePaths
     
-    let url: MediaURL
-    
+    let resource: MediaResource
+
     let loadingRequest: AVAssetResourceLoadingRequest
     
     let fileHandle: MediaFileHandle
     
     let useChecksum: Bool
     
-    deinit {
-        VLog(.info, "downloader id: \(id), VideoDownloader deinit\n")
-        NSObject.cancelPreviousPerformRequests(withTarget: self)
-    }
-    
-    init(paths: MediaCachePaths,
-         session: URLSession?,
-         url: MediaURL,
-         loadingRequest: AVAssetResourceLoadingRequest,
-         fileHandle: MediaFileHandle,
-         useChecksum: Bool) {
+    init(
+        paths: MediaCachePaths,
+        session: URLSession?,
+        resource: MediaResource,
+        loadingRequest: AVAssetResourceLoadingRequest,
+        fileHandle: MediaFileHandle,
+        useChecksum: Bool
+    ) {
         self.paths = paths
         self.session = session
-        self.url = url
+        self.resource = resource
         self.loadingRequest = loadingRequest
         self.fileHandle = fileHandle
         self.useChecksum = useChecksum
         super.init()
         dataDelegate = DownloaderSessionDelegate(delegate: self)
     }
-    
+
+    deinit {
+        VLog(.info, "downloader id: \(id), VideoDownloader deinit\n")
+        NSObject.cancelPreviousPerformRequests(withTarget: self)
+    }
+
     let id: Int = accId
     
     private var actions: [Action] = []
@@ -151,7 +153,7 @@ extension MediaDownloader {
     @objc func actionLoop() {
         if isCancelled {
             VLog(.info, "this downloader is cancelled, callback cancelled message and return")
-            finishLoading(error: MediaCacheErrors.cancelled.error)
+            finishLoading(error: MediaCacheError.cancelled)
             return
         }
         guard actions.count > 0 else {
@@ -208,7 +210,7 @@ extension MediaDownloader {
     func download(for range: MediaRange) {
         VLog(.info, "downloader id: \(id), download range: (\(range)) length: \(range.length)")
         guard let originUrl = loadingRequest.request.url?.originUrl else {
-            finishLoading(error: MediaCacheErrors.badUrl.error)
+            finishLoading(error: MediaCacheError.badUrl)
             return
         }
         
@@ -340,19 +342,19 @@ private class DownloaderSessionDelegate: NSObject, DownloaderSessionDelegateType
     
     private var bufferData = NSMutableData()
     
-    deinit {
-        VLog(.info, "DownloaderSessionDelegate deinit\n")
-    }
-    
     init(delegate: DownloaderSessionDelegateDelegate?) {
         super.init()
         self.delegate = delegate
     }
-    
+
+    deinit {
+        VLog(.info, "DownloaderSessionDelegate deinit\n")
+    }
+
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
         VLog(.data, "task: \(dataTask) did receive response: \(response)")
         guard let mimeType = response.mimeType, (mimeType.hasPrefix("video") || mimeType.hasPrefix("audio") || mimeType.hasPrefix("application")) else {
-            delegate?.downloaderSession(self, didCompleteWithError: MediaCacheErrors.notMedia.error)
+            delegate?.downloaderSession(self, didCompleteWithError: MediaCacheError.notMedia)
             completionHandler(.cancel)
             return
         }

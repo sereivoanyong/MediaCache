@@ -1,5 +1,5 @@
 //
-//  VURL.swift
+//  MediaResource.swift
 //  MediaCache
 //
 //  Created by SoalHuang on 2019/2/24.
@@ -8,11 +8,13 @@
 
 import UIKit
 
-public typealias MediaCacheKey = String
-
 let MediaCacheConfigFileExt = "json"
 
-public struct MediaURL: Codable {
+public typealias MediaRange = ClosedRange<Int>
+
+public typealias MediaCacheKey = String
+
+public struct MediaResource: Codable {
 
     public let cacheKey: MediaCacheKey
 

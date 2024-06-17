@@ -44,7 +44,7 @@ class ViewController: UIViewController {
 //        let url = URL(string: "https://druryunb3e1cw.cloudfront.net/kilo-travel/files/2024/06/11/65e6ef7f21c1060d49c19571/b8fd661b-8ec1-481e-8290-1cacac94f97e.mov")!
 //        let url = URL(string: "https://files.testfile.org/Video%20MP4%2FRiver%20-%20testfile.org.mp4")!
         let url = URL(string: "https://files.testfile.org/Video%20MP4%2FInk%20-%20testfile.org.mp4")!
-        let cacheItem = AVPlayerItem(remote: url)
+        let cacheItem = AVPlayerItem.caching(url: url)
         
         playerViewController.player = AVPlayer(playerItem: cacheItem)
         playerViewController.player?.play()

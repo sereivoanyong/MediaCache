@@ -18,32 +18,32 @@ extension MediaLRUConfiguration {
     }
     
     @discardableResult
-    public func visit(url: MediaURL) -> Bool {
-        VLog(.info, "use url: \(url)")
+    public func visit(_ resource: MediaResource) -> Bool {
+        VLog(.info, "use resource: \(resource)")
         return lock.sync {
-            if let content = contentMap[url.cacheKey] {
+            if let content = contents[resource.cacheKey] {
                 content.use()
             } else {
-                let content = LRUContent(url: url)
-                contentMap[url.cacheKey] = content
+                let content = LRUContent(resource: resource)
+                contents[resource.cacheKey] = content
             }
             return synchronize()
         }
     }
     
     @discardableResult
-    public func delete(url: MediaURL) -> Bool {
-        VLog(.info, "delete url: \(url)")
+    public func delete(_ resource: MediaResource) -> Bool {
+        VLog(.info, "delete resource: \(resource)")
         return lock.sync {
-            contentMap.removeValue(forKey: url.cacheKey)
+            contents.removeValue(forKey: resource.cacheKey)
             return synchronize()
         }
     }
     
     @discardableResult
-    public func deleteAll(without downloading: [MediaCacheKey: MediaURL]) -> Bool {
+    public func deleteAll(without downloading: [MediaCacheKey: MediaResource]) -> Bool {
         lock.sync {
-            contentMap = contentMap.filter { downloading[$0.key] != nil }
+            contents = contents.filter { downloading[$0.key] != nil }
             return synchronize()
         }
     }
@@ -73,18 +73,18 @@ extension MediaLRUConfiguration {
     // result sorted:       [C(5), E(9), D(10), A(11), B(14), F(14)]
     // oldest:              C(5)
     
-    public func oldestURL(maxLength: Int = 1, without downloading: [MediaCacheKey: MediaURL]) -> [MediaURL] {
+    public func oldestResources(maxLength: Int = 1, without downloading: [MediaCacheKey: MediaResource]) -> [MediaResource] {
         lock.sync {
-          let urls = contentMap.filter { downloading[$0.key] == nil }.values
+            let urls = contents.filter { downloading[$0.key] == nil }.values
 
-          VLog(.info, "urls: \(urls)")
+            VLog(.info, "urls: \(urls)")
 
-          guard urls.count > maxLength else { return urls.compactMap { $0.url} }
+            guard urls.count > maxLength else { return urls.compactMap { $0.resource } }
 
-          urls.sorted { $0.time < $1.time }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * timeWeight }
-          urls.sorted { $0.count < $1.count }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * useWeight }
+            urls.sorted { $0.playedAt < $1.playedAt }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * timeWeight }
+            urls.sorted { $0.count < $1.count }.enumerated().forEach { $0.element.weight += ($0.offset + 1) * useWeight }
 
-          return urls.sorted(by: { $0.weight < $1.weight }).prefix(maxLength).compactMap { $0.url }
+            return urls.sorted(by: { $0.weight < $1.weight }).prefix(maxLength).compactMap { $0.resource }
         }
     }
 }
@@ -96,8 +96,8 @@ final public class MediaLRUConfiguration {
     
     var fileURL: URL?
 
-    private var contentMap: [MediaCacheKey: LRUContent] = [:]
-    
+    private var contents: [MediaCacheKey: LRUContent] = [:]
+
     static func read(from fileURL: URL) -> MediaLRUConfiguration? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
         do {
@@ -121,45 +121,45 @@ final public class MediaLRUConfiguration {
 
 extension MediaLRUConfiguration: Codable {
   
-  private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
 
-    case timeWeight
-    case useWeight
-    case contentMap
-  }
+        case timeWeight
+        case useWeight
+        case contents
+    }
 }
 
 extension LRUContent {
     
     func use() {
-        time = Date()
+        playedAt = Date()
         count += 1
     }
 }
 
 final class LRUContent {
 
-    let url: MediaURL
-    
-    var time: Date
+    let resource: MediaResource
+
+    var playedAt: Date
 
     var count: Int
     
     var weight: Int = 0
     
-    init(url: MediaURL) {
-        self.url = MediaURL(cacheKey: url.cacheKey, url: url.url)
-        self.time = Date()
+    init(resource: MediaResource) {
+        self.resource = resource
+        self.playedAt = Date()
         self.count = 1
     }
 }
 
 extension LRUContent: Codable {
 
-  private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
 
-    case url
-    case time
-    case count
-  }
+        case resource
+        case playedAt
+        case count
+    }
 }
