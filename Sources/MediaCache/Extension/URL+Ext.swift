@@ -11,7 +11,7 @@ import MobileCoreServices
 
 extension URL {
     
-    static let MediaCacheScheme = "__MediaCache__:"
+    static let MediaCacheScheme = "MediaCache:"
     
     var isCacheScheme: Bool {
         return absoluteString.hasPrefix(URL.MediaCacheScheme)
